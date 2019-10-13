@@ -303,6 +303,7 @@ public class CameraSource {
         previewFpsRange[Camera.Parameters.PREVIEW_FPS_MIN_INDEX],
         previewFpsRange[Camera.Parameters.PREVIEW_FPS_MAX_INDEX]);
     parameters.setPreviewFormat(ImageFormat.NV21);
+    parameters.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
 
     setRotation(camera, parameters, requestedCameraId);
 
