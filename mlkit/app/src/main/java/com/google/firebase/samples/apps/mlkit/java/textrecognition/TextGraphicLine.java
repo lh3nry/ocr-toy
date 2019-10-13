@@ -1,16 +1,3 @@
-// Copyright 2018 Google LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
 package com.google.firebase.samples.apps.mlkit.java.textrecognition;
 
 import android.graphics.Canvas;
@@ -20,15 +7,10 @@ import android.graphics.RectF;
 
 import com.google.firebase.ml.vision.text.FirebaseVisionText;
 import com.google.firebase.samples.apps.mlkit.common.GraphicOverlay;
-import com.google.firebase.samples.apps.mlkit.common.GraphicOverlay.Graphic;
 
-/**
- * Graphic instance for rendering TextBlock position, size, and ID within an associated graphic
- * overlay view.
- */
-public class TextGraphic extends Graphic {
+public class TextGraphicLine extends GraphicOverlay.Graphic {
 
-  private static final int TEXT_COLOR = Color.WHITE;
+  private static final int TEXT_COLOR = Color.GREEN;
   private static final float TEXT_SIZE = 54.0f;
   private static final float STROKE_WIDTH = 4.0f;
 
@@ -36,7 +18,7 @@ public class TextGraphic extends Graphic {
   private final Paint textPaint;
   private final FirebaseVisionText.TextBlock text;
 
-  TextGraphic(GraphicOverlay overlay, FirebaseVisionText.TextBlock text) {
+  TextGraphicLine(GraphicOverlay overlay, FirebaseVisionText.TextBlock text) {
     super(overlay);
 
     this.text = text;
