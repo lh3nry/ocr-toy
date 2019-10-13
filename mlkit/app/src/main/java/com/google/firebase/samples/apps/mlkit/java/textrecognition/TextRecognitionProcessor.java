@@ -70,19 +70,17 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
                     originalCameraImage);
             graphicOverlay.add(imageGraphic);
         }
+
+        FirebaseVisionText.TextBlock tmpBlock;
         List<FirebaseVisionText.TextBlock> blocks = results.getTextBlocks();
         for (int i = 0; i < blocks.size(); i++) {
-            List<FirebaseVisionText.Line> lines = blocks.get(i).getLines();
-            for (int j = 0; j < lines.size(); j++) {
-                List<FirebaseVisionText.Element> elements = lines.get(j).getElements();
-                for (int k = 0; k < elements.size(); k++) {
-                    if (elements.get(k).getText().contains("TOTAL") || elements.get(k).getText().contains("$")) {
-                        GraphicOverlay.Graphic textGraphic = new TextGraphic(graphicOverlay, elements.get(k));
-                        graphicOverlay.add(textGraphic);
-                    }
-                }
+            tmpBlock = blocks.get(i);
+            if (tmpBlock.getText().contains("TOTAL") || tmpBlock.getText().contains("$")) {
+                GraphicOverlay.Graphic textGraphic = new TextGraphic(graphicOverlay, tmpBlock);
+                graphicOverlay.add(textGraphic);
             }
         }
+
         graphicOverlay.postInvalidate();
     }
 
