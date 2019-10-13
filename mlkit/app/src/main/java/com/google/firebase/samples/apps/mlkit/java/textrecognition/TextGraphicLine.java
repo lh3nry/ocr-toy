@@ -16,9 +16,9 @@ public class TextGraphicLine extends GraphicOverlay.Graphic {
 
   private final Paint rectPaint;
   private final Paint textPaint;
-  private final FirebaseVisionText.TextBlock text;
+  private final FirebaseVisionText.Line text;
 
-  TextGraphicLine(GraphicOverlay overlay, FirebaseVisionText.TextBlock text) {
+  TextGraphicLine(GraphicOverlay overlay, FirebaseVisionText.Line text) {
     super(overlay);
 
     this.text = text;
