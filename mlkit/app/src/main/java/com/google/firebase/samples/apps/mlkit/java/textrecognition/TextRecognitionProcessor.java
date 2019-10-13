@@ -58,6 +58,10 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         return detector.processImage(image);
     }
 
+    private float TotalYValueMidPoint = -1;
+    private float TotalRectHeight = -1;
+    private float NearnessThreshold = 3;
+
     @Override
     protected void onSuccess(
             @Nullable Bitmap originalCameraImage,
@@ -75,13 +79,38 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         List<FirebaseVisionText.TextBlock> blocks = results.getTextBlocks();
         for (int i = 0; i < blocks.size(); i++) {
             tmpBlock = blocks.get(i);
-            if (tmpBlock.getText().contains("TOTAL") || tmpBlock.getText().contains("$")) {
-                GraphicOverlay.Graphic textGraphic = new TextGraphic(graphicOverlay, tmpBlock);
-                graphicOverlay.add(textGraphic);
+            if (tmpBlock.getText().contains("TOTAL")) {
+
+
+                GraphicOverlay.Graphic blockGraphic = new TextGraphicBlock(graphicOverlay, tmpBlock);
+                graphicOverlay.add(blockGraphic);
+                List<FirebaseVisionText.Line> lines = blocks.get(i).getLines();
+                for (int j = 0; j < lines.size(); j++) {
+                    if (lines.get(j).getText().contains("TOTAL")) {
+                        FirebaseVisionText.Line line = lines.get(j);
+                        TotalRectHeight = line.getBoundingBox().top - line.getBoundingBox().bottom;
+                        TotalYValueMidPoint = (line.getBoundingBox().top + line.getBoundingBox().bottom) / 2f;
+                        GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, lines.get(j));
+                        graphicOverlay.add(lineGraphic);
+//                        lineGraphic = new TextGraphicLine(graphicOverlay, lines.get(j));
+//                        graphicOverlay.add(lineGraphic);
+                        j = lines.size();
+                    }
+                }
+            } else if (tmpBlock.getText().contains("$")) {
+                for (FirebaseVisionText.Line line : tmpBlock.getLines()) {
+                    float lineMidPoint = (line.getBoundingBox().top + line.getBoundingBox().bottom) / 2f;
+                    if (Math.abs(lineMidPoint - TotalYValueMidPoint) < NearnessThreshold) {
+                        GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
+                        graphicOverlay.add(lineGraphic);
+                    }
+                }
             }
         }
 
         graphicOverlay.postInvalidate();
+        TotalYValueMidPoint = -1;
+        TotalRectHeight = -1;
     }
 
     @Override
