@@ -30,8 +30,6 @@ import com.google.firebase.samples.apps.mlkit.java.VisionProcessorBase;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Processor for the text recognition demo.
@@ -77,13 +75,10 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
             graphicOverlay.add(imageGraphic);
         }
 
-        Pattern currency = Pattern.compile("^\\$?(([1-9]\\d{0,2}(,\\d{3})*)|(([1-9]\\d*)?\\d))(\\.\\d\\d)?$");
-
         FirebaseVisionText.TextBlock tmpBlock;
         List<FirebaseVisionText.TextBlock> blocks = results.getTextBlocks();
         for (int i = 0; i < blocks.size(); i++) {
             tmpBlock = blocks.get(i);
-            Matcher matcher = currency.matcher(tmpBlock.getText());
             if (tmpBlock.getText().contains("TOTAL")) {
                 GraphicOverlay.Graphic blockGraphic = new TextGraphicBlock(graphicOverlay, tmpBlock);
                 graphicOverlay.add(blockGraphic);
@@ -101,7 +96,6 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
                     }
                 }
             }
-//            else if (tmpBlock.getText().contains("$")) {
             else {
                 for (FirebaseVisionText.Line line : tmpBlock.getLines()) {
                     float lineMidPoint = (line.getBoundingBox().top + line.getBoundingBox().bottom) / 2f;
