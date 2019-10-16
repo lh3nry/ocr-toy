@@ -112,7 +112,7 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
 
                         }
                         else{
-                            outputMap.get("TOTAL").setText("$" + line.getText());
+                            processText(line.getText());
                         }
                     }
                 }
