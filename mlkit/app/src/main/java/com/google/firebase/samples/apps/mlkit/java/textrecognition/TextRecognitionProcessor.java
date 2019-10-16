@@ -30,6 +30,7 @@ import com.google.firebase.samples.apps.mlkit.common.GraphicOverlay;
 import com.google.firebase.samples.apps.mlkit.java.VisionProcessorBase;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Map;
 
@@ -126,10 +127,11 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
 
     private void processText(String raw) {
         raw = raw.replace("$","");
+        raw = raw.replace(" ","");
         raw = raw.replace(",",".");
         try {
             float parsed = Float.parseFloat(raw);
-            outputMap.get("TOTAL").setText(String.valueOf(parsed));
+            outputMap.get("TOTAL").setText(new DecimalFormat("#.00").format(parsed));
         } catch (NumberFormatException formatEx) {
 //            outputMap.get("TOTAL").setText("$" + raw);
         }
