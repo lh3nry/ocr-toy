@@ -108,7 +108,8 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
                         GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
                         graphicOverlay.add(lineGraphic);
                         if (line.getText().contains("$")){
-                            outputMap.get("TOTAL").setText(line.getText());
+                            processText(line.getText());
+
                         }
                         else{
                             outputMap.get("TOTAL").setText("$" + line.getText());
@@ -121,6 +122,17 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         graphicOverlay.postInvalidate();
         TotalYValueMidPoint = -1;
         TotalRectHeight = -1;
+    }
+
+    private void processText(String raw) {
+        raw = raw.replace("$","");
+        raw = raw.replace(",",".");
+        try {
+            float parsed = Float.parseFloat(raw);
+            outputMap.get("TOTAL").setText(String.valueOf(parsed));
+        } catch (NumberFormatException formatEx) {
+//            outputMap.get("TOTAL").setText("$" + raw);
+        }
     }
 
     @Override
