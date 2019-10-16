@@ -17,6 +17,7 @@ import android.graphics.Bitmap;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import android.util.Log;
+import android.widget.TextView;
 
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.ml.vision.FirebaseVision;
@@ -30,6 +31,7 @@ import com.google.firebase.samples.apps.mlkit.java.VisionProcessorBase;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Processor for the text recognition demo.
@@ -40,8 +42,11 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
 
     private final FirebaseVisionTextRecognizer detector;
 
-    public TextRecognitionProcessor() {
+    private Map<String, TextView> outputMap;
+
+    public TextRecognitionProcessor(Map<String, TextView> textDict) {
         detector = FirebaseVision.getInstance().getOnDeviceTextRecognizer();
+        outputMap = textDict;
     }
 
     @Override
@@ -102,6 +107,12 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
                     if (Math.abs(lineMidPoint - TotalYValueMidPoint) < NearnessThreshold) {
                         GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
                         graphicOverlay.add(lineGraphic);
+                        if (line.getText().contains("$")){
+                            outputMap.get("TOTAL").setText(line.getText());
+                        }
+                        else{
+                            outputMap.get("TOTAL").setText("$" + line.getText());
+                        }
                     }
                 }
             }
