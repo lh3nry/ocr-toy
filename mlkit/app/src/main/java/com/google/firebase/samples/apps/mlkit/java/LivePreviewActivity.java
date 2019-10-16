@@ -16,17 +16,14 @@ package com.google.firebase.samples.apps.mlkit.java;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.hardware.Camera;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
-import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
-import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.ToggleButton;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -51,7 +48,9 @@ import com.google.firebase.samples.apps.mlkit.java.textrecognition.TextRecogniti
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Demo app showing the various features of ML Kit for Firebase. This class is used to
@@ -77,7 +76,12 @@ public final class LivePreviewActivity extends AppCompatActivity
     private CameraSource cameraSource = null;
     private CameraSourcePreview preview;
     private GraphicOverlay graphicOverlay;
-    private String selectedModel = FACE_CONTOUR;
+    private String selectedModel = TEXT_DETECTION;
+
+    private TextView totalLabel;
+    private TextView totalValue;
+
+    private Map<String, TextView> textDict = new HashMap<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,32 +98,40 @@ public final class LivePreviewActivity extends AppCompatActivity
             Log.d(TAG, "graphicOverlay is null");
         }
 
-        Spinner spinner = findViewById(R.id.spinner);
-        List<String> options = new ArrayList<>();
-        options.add(TEXT_DETECTION);
-        options.add(FACE_CONTOUR);
-        options.add(FACE_DETECTION);
-        options.add(AUTOML_IMAGE_LABELING);
-        options.add(OBJECT_DETECTION);
-        options.add(BARCODE_DETECTION);
-        options.add(IMAGE_LABEL_DETECTION);
-        options.add(CLASSIFICATION_QUANT);
-        options.add(CLASSIFICATION_FLOAT);
-        // Creating adapter for spinner
-        ArrayAdapter<String> dataAdapter = new ArrayAdapter<>(this, R.layout.spinner_style,
-                options);
-        // Drop down layout style - list view with radio button
-        dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        // attaching data adapter to spinner
-        spinner.setAdapter(dataAdapter);
-        spinner.setOnItemSelectedListener(this);
+//        Spinner spinner = findViewById(R.id.spinner);
+//        List<String> options = new ArrayList<>();
+//        options.add(TEXT_DETECTION);
+//        options.add(FACE_CONTOUR);
+//        options.add(FACE_DETECTION);
+//        options.add(AUTOML_IMAGE_LABELING);
+//        options.add(OBJECT_DETECTION);
+//        options.add(BARCODE_DETECTION);
+//        options.add(IMAGE_LABEL_DETECTION);
+//        options.add(CLASSIFICATION_QUANT);
+//        options.add(CLASSIFICATION_FLOAT);
+//        // Creating adapter for spinner
+//        ArrayAdapter<String> dataAdapter = new ArrayAdapter<>(this, R.layout.spinner_style,
+//                options);
+//        // Drop down layout style - list view with radio button
+//        dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+//        // attaching data adapter to spinner
+//        spinner.setAdapter(dataAdapter);
+//        spinner.setOnItemSelectedListener(this);
+//
+//        ToggleButton facingSwitch = findViewById(R.id.facingSwitch);
+//        facingSwitch.setOnCheckedChangeListener(this);
+//        // Hide the toggle button if there is only 1 camera
+//        if (Camera.getNumberOfCameras() == 1) {
+//            facingSwitch.setVisibility(View.GONE);
+//        }
 
-        ToggleButton facingSwitch = findViewById(R.id.facingSwitch);
-        facingSwitch.setOnCheckedChangeListener(this);
-        // Hide the toggle button if there is only 1 camera
-        if (Camera.getNumberOfCameras() == 1) {
-            facingSwitch.setVisibility(View.GONE);
-        }
+        totalLabel = findViewById(R.id.totalLabel);
+        totalValue = findViewById(R.id.totalValue);
+
+        totalValue.setText("$0.00");
+        totalValue.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+
+        textDict.put("TOTAL", totalValue);
 
         if (allPermissionsGranted()) {
             createCameraSource(selectedModel);
@@ -180,7 +192,7 @@ public final class LivePreviewActivity extends AppCompatActivity
                     break;
                 case TEXT_DETECTION:
                     Log.i(TAG, "Using Text Detector Processor");
-                    cameraSource.setMachineLearningFrameProcessor(new TextRecognitionProcessor());
+                    cameraSource.setMachineLearningFrameProcessor(new TextRecognitionProcessor(textDict));
                     break;
                 case FACE_DETECTION:
                     Log.i(TAG, "Using Face Detector Processor");
