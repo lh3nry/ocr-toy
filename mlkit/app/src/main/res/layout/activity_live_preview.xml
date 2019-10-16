@@ -52,8 +52,9 @@
                 android:id="@+id/totalLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
+                android:gravity="center|center_horizontal"
                 android:text="TOTAL"
-                android:textAlignment="center"
+                android:textAlignment="gravity"
                 android:textAppearance="@style/TextAppearance.AppCompat.Large"
                 android:textColor="#FFFFFF"
                 android:textSize="36sp"
@@ -65,8 +66,9 @@
                 android:id="@+id/totalValue"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:gravity="center|right"
                 android:text="TextView"
-                android:textAlignment="viewEnd"
+                android:textAlignment="gravity"
                 android:textColor="#FFFFFF"
                 android:textSize="36sp" />
         </LinearLayout>
