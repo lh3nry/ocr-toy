@@ -31,6 +31,7 @@ import com.google.firebase.samples.apps.mlkit.java.VisionProcessorBase;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -44,6 +45,7 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
     private final FirebaseVisionTextRecognizer detector;
 
     private Map<String, TextView> outputMap;
+    private Map<String, Map<Float, Integer>> counterSet = new HashMap<>();
 
     public TextRecognitionProcessor(Map<String, TextView> textDict) {
         detector = FirebaseVision.getInstance().getOnDeviceTextRecognizer();
@@ -110,7 +112,6 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
                         graphicOverlay.add(lineGraphic);
                         if (line.getText().contains("$")){
                             processText(line.getText());
-
                         }
                         else{
                             processText(line.getText());
@@ -132,6 +133,20 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         try {
             float parsed = Float.parseFloat(raw);
             outputMap.get("TOTAL").setText(new DecimalFormat("#.00").format(parsed));
+            if (counterSet.containsKey("TOTAL")){
+                Map<Float, Integer> x = counterSet.get("TOTAL");
+                if (x.containsKey(parsed)) {
+                    x.put (parsed, x.get(parsed) + 1);
+                }
+                else {
+                    x.put (parsed, 1);
+                }
+            }
+            else {
+                Map<Float, Integer> x = new HashMap<>();
+                x.put(parsed, 1);
+                counterSet.put("TOTAL", x);
+            }
         } catch (NumberFormatException formatEx) {
 //            outputMap.get("TOTAL").setText("$" + raw);
         }
