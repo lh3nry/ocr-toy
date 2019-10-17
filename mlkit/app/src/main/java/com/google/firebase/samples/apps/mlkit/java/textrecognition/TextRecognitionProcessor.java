@@ -125,6 +125,19 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         TotalYValueMidPoint = -1;
         TotalRectHeight = -1;
     }
+    
+    private float FindMaxOccuring (Map<Float, Integer> countingMap){
+        int max = -1;
+        float maxKey = Float.NaN;
+        for (Map.Entry<Float, Integer> entry : countingMap.entrySet()) {
+            if (entry.getValue() > max){
+                max = entry.getValue();
+                maxKey = entry.getKey();
+            }
+        }
+
+        return maxKey;
+    }
 
     private void processText(String raw) {
         raw = raw.replace("$","");
@@ -132,7 +145,6 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         raw = raw.replace(",",".");
         try {
             float parsed = Float.parseFloat(raw);
-            outputMap.get("TOTAL").setText(new DecimalFormat("#.00").format(parsed));
             if (counterSet.containsKey("TOTAL")){
                 Map<Float, Integer> x = counterSet.get("TOTAL");
                 if (x.containsKey(parsed)) {
@@ -147,6 +159,8 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
                 x.put(parsed, 1);
                 counterSet.put("TOTAL", x);
             }
+
+            outputMap.get("TOTAL").setText(new DecimalFormat("#.00").format(FindMaxOccuring(counterSet.get("TOTAL"))));
         } catch (NumberFormatException formatEx) {
 //            outputMap.get("TOTAL").setText("$" + raw);
         }
