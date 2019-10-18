@@ -138,8 +138,8 @@ public final class LivePreviewActivity extends AppCompatActivity
         textDict.put("TOTAL", totalValue);
 
         LinearLayout entriesLayout = findViewById(R.id.EntriesLayout);
-        for (int i = 1; i <= 2; i++) {
-            CreateEntry("TextView " + String.valueOf(i), entriesLayout);
+        for (int i = 1; i <= 5; i++) {
+            CreateEntry("Label " + String.valueOf(i), entriesLayout);
         }
 
         if (allPermissionsGranted()) {
