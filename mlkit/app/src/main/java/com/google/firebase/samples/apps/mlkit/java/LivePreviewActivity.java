@@ -19,7 +19,9 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.CompoundButton;
@@ -137,11 +139,7 @@ public final class LivePreviewActivity extends AppCompatActivity
 
         LinearLayout entriesLayout = findViewById(R.id.EntriesLayout);
         for (int i = 1; i <= 2; i++) {
-            TextView textView = new TextView(this);
-            textView.setTextColor(Color.WHITE);
-            textView.setTextSize(36f);
-            textView.setText("TextView " + String.valueOf(i));
-            entriesLayout.addView(textView);
+            CreateEntry("TextView " + String.valueOf(i), entriesLayout);
         }
 
         if (allPermissionsGranted()) {
@@ -149,6 +147,41 @@ public final class LivePreviewActivity extends AppCompatActivity
         } else {
             getRuntimePermissions();
         }
+    }
+
+    private void CreateEntry(String label, LinearLayout parent)
+    {
+        LinearLayout entryHLayout = new LinearLayout(this);
+        entryHLayout.setOrientation(LinearLayout.HORIZONTAL);
+
+        // label TextView
+        TextView labelText = new TextView(this);
+        labelText.setTextColor(Color.WHITE);
+        labelText.setTextSize(36f);
+        labelText.setText(label);
+        labelText.setLayoutParams(
+                new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                ));
+
+        // dollar amount TextView
+        TextView valueText = new TextView(this);
+        valueText.setTextColor(Color.WHITE);
+        valueText.setTextSize(36f);
+        valueText.setText("$0.00");
+        valueText.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        valueText.setGravity(Gravity.RIGHT);
+        valueText.setLayoutParams(
+                new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                ));
+
+        entryHLayout.addView(labelText);
+        entryHLayout.addView(valueText);
+
+        parent.addView(entryHLayout);
     }
 
     @Override
