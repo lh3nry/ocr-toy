@@ -16,12 +16,14 @@ package com.google.firebase.samples.apps.mlkit.java;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.CompoundButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -132,6 +134,15 @@ public final class LivePreviewActivity extends AppCompatActivity
         totalValue.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
 
         textDict.put("TOTAL", totalValue);
+
+        LinearLayout entriesLayout = findViewById(R.id.EntriesLayout);
+        for (int i = 1; i <= 2; i++) {
+            TextView textView = new TextView(this);
+            textView.setTextColor(Color.WHITE);
+            textView.setTextSize(36f);
+            textView.setText("TextView " + String.valueOf(i));
+            entriesLayout.addView(textView);
+        }
 
         if (allPermissionsGranted()) {
             createCameraSource(selectedModel);
