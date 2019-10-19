@@ -52,7 +52,7 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
     private Map<String, TextView> outputMap;
     private Map<String, Map<Float, Integer>> counterSet = new HashMap<>();
 
-    Map<String, Integer> abbrevMonths = new HashMap<String, Integer> () {{
+    private final Map<String, Integer> abbrevMonths = new HashMap<String, Integer> () {{
         put("Jan",  1);
         put("Feb",  2);
         put("Mar",  3);
