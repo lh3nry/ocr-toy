@@ -34,6 +34,7 @@ import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Processor for the text recognition demo.
@@ -47,6 +48,7 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
     private Map<String, TextView> outputMap;
     private Map<String, Map<Float, Integer>> counterSet = new HashMap<>();
 
+    Pattern checkMonths = Pattern.compile("^(Jan)|(Feb)|(Mar)|(Apr)|(May)|(Jun)|(Jul)|(Aug)|(Sep)|(Oct)|(Nov)|(Dec)*$");
     public TextRecognitionProcessor(Map<String, TextView> textDict) {
         detector = FirebaseVision.getInstance().getOnDeviceTextRecognizer();
         outputMap = textDict;
@@ -83,7 +85,6 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
             graphicOverlay.add(imageGraphic);
         }
 
-        Pattern checkMonths = Pattern.compile("^(Jan)|(Feb)|(Mar)|(Apr)|(May)|(Jun)|(Jul)|(Aug)|(Sep)|(Oct)|(Nov)|(Dec)*$");
         for (FirebaseVisionText.TextBlock tmpBlock : results.getTextBlocks()) {
             if (tmpBlock.getText().contains("TOTAL")) {
                 GraphicOverlay.Graphic blockGraphic = new TextGraphicBlock(graphicOverlay, tmpBlock);
