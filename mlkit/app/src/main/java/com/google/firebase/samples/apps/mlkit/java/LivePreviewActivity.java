@@ -160,10 +160,10 @@ public final class LivePreviewActivity extends AppCompatActivity
         labelText.setTextSize(36f);
         labelText.setText(label);
         labelText.setLayoutParams(
-                new LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.WRAP_CONTENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                ));
+            new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+            ));
 
         // dollar amount TextView
         TextView valueText = new TextView(this);
@@ -173,15 +173,17 @@ public final class LivePreviewActivity extends AppCompatActivity
         valueText.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         valueText.setGravity(Gravity.RIGHT);
         valueText.setLayoutParams(
-                new LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                ));
+            new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+            ));
 
         entryHLayout.addView(labelText);
         entryHLayout.addView(valueText);
 
         parent.addView(entryHLayout);
+
+        textDict.put(label, valueText);
     }
 
     @Override
