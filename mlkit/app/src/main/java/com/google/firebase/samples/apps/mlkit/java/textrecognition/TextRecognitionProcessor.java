@@ -68,6 +68,35 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
     }};
 
     Pattern checkMonths = Pattern.compile("^(Jan)|(Feb)|(Mar)|(Apr)|(May)|(Jun)|(Jul)|(Aug)|(Sep)|(Oct)|(Nov)|(Dec)*$");
+    String mmddyyyy_str = "^\\d{1,2}/\\d{1,2}/\\d{4}";
+    Pattern ddmmyyyy = Pattern.compile(mmddyyyy_str);
+
+    private final Map<String, String> DATE_FORMAT_REGEXPS = new HashMap<String, String>() {{
+        put("^\\d{8}$", "yyyyMMdd");
+        put("^\\d{1,2}-\\d{1,2}-\\d{4}$", "dd-MM-yyyy");
+        put("^\\d{4}-\\d{1,2}-\\d{1,2}$", "yyyy-MM-dd");
+        put(mmddyyyy_str, "MM/dd/yyyy");
+        put("^\\d{4}/\\d{1,2}/\\d{1,2}$", "yyyy/MM/dd");
+        put("^\\d{1,2}\\s[a-z]{3}\\s\\d{4}$", "dd MMM yyyy");
+        put("^\\d{1,2}\\s[a-z]{4,}\\s\\d{4}$", "dd MMMM yyyy");
+        put("^\\d{12}$", "yyyyMMddHHmm");
+        put("^\\d{8}\\s\\d{4}$", "yyyyMMdd HHmm");
+        put("^\\d{1,2}-\\d{1,2}-\\d{4}\\s\\d{1,2}:\\d{2}$", "dd-MM-yyyy HH:mm");
+        put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}$", "yyyy-MM-dd HH:mm");
+        put("^\\d{1,2}/\\d{1,2}/\\d{4}\\s\\d{1,2}:\\d{2}$", "MM/dd/yyyy HH:mm");
+        put("^\\d{4}/\\d{1,2}/\\d{1,2}\\s\\d{1,2}:\\d{2}$", "yyyy/MM/dd HH:mm");
+        put("^\\d{1,2}\\s[a-z]{3}\\s\\d{4}\\s\\d{1,2}:\\d{2}$", "dd MMM yyyy HH:mm");
+        put("^\\d{1,2}\\s[a-z]{4,}\\s\\d{4}\\s\\d{1,2}:\\d{2}$", "dd MMMM yyyy HH:mm");
+        put("^\\d{14}$", "yyyyMMddHHmmss");
+        put("^\\d{8}\\s\\d{6}$", "yyyyMMdd HHmmss");
+        put("^\\d{1,2}-\\d{1,2}-\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "dd-MM-yyyy HH:mm:ss");
+        put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}$", "yyyy-MM-dd HH:mm:ss");
+        put("^\\d{1,2}/\\d{1,2}/\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "MM/dd/yyyy HH:mm:ss");
+        put("^\\d{4}/\\d{1,2}/\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}$", "yyyy/MM/dd HH:mm:ss");
+        put("^\\d{1,2}\\s[a-z]{3}\\s\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "dd MMM yyyy HH:mm:ss");
+        put("^\\d{1,2}\\s[a-z]{4,}\\s\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "dd MMMM yyyy HH:mm:ss");
+    }};
+
     public TextRecognitionProcessor(Map<String, TextView> textDict) {
         detector = FirebaseVision.getInstance().getOnDeviceTextRecognizer();
         outputMap = textDict;
@@ -135,6 +164,14 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
                             GraphicOverlay.Graphic elementGraphic = new TextGraphicElement(graphicOverlay, e);
                             graphicOverlay.add(elementGraphic);
                         }
+                    }
+                }
+            }
+            else if (tmpBlock.getText().contains("/")) {
+                for (FirebaseVisionText.Line line : tmpBlock.getLines()) {
+                    if (ddmmyyyy.matcher(line.getText()).lookingAt()) {
+                        GraphicOverlay.Graphic blockGraphic = new TextGraphicLine(graphicOverlay, line);
+                        graphicOverlay.add(blockGraphic);
                     }
                 }
             }
