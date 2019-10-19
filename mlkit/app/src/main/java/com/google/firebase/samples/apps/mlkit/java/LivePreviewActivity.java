@@ -16,17 +16,18 @@ package com.google.firebase.samples.apps.mlkit.java;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.hardware.Camera;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
-import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
-import android.widget.Spinner;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.ToggleButton;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -51,7 +52,9 @@ import com.google.firebase.samples.apps.mlkit.java.textrecognition.TextRecogniti
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Demo app showing the various features of ML Kit for Firebase. This class is used to
@@ -77,7 +80,12 @@ public final class LivePreviewActivity extends AppCompatActivity
     private CameraSource cameraSource = null;
     private CameraSourcePreview preview;
     private GraphicOverlay graphicOverlay;
-    private String selectedModel = FACE_CONTOUR;
+    private String selectedModel = TEXT_DETECTION;
+
+    private TextView totalLabel;
+    private TextView totalValue;
+
+    private Map<String, TextView> textDict = new HashMap<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,38 +102,59 @@ public final class LivePreviewActivity extends AppCompatActivity
             Log.d(TAG, "graphicOverlay is null");
         }
 
-        Spinner spinner = findViewById(R.id.spinner);
-        List<String> options = new ArrayList<>();
-        options.add(TEXT_DETECTION);
-        options.add(FACE_CONTOUR);
-        options.add(FACE_DETECTION);
-        options.add(AUTOML_IMAGE_LABELING);
-        options.add(OBJECT_DETECTION);
-        options.add(BARCODE_DETECTION);
-        options.add(IMAGE_LABEL_DETECTION);
-        options.add(CLASSIFICATION_QUANT);
-        options.add(CLASSIFICATION_FLOAT);
-        // Creating adapter for spinner
-        ArrayAdapter<String> dataAdapter = new ArrayAdapter<>(this, R.layout.spinner_style,
-                options);
-        // Drop down layout style - list view with radio button
-        dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        // attaching data adapter to spinner
-        spinner.setAdapter(dataAdapter);
-        spinner.setOnItemSelectedListener(this);
+        totalLabel = findViewById(R.id.totalLabel);
+        totalValue = findViewById(R.id.totalValue);
 
-        ToggleButton facingSwitch = findViewById(R.id.facingSwitch);
-        facingSwitch.setOnCheckedChangeListener(this);
-        // Hide the toggle button if there is only 1 camera
-        if (Camera.getNumberOfCameras() == 1) {
-            facingSwitch.setVisibility(View.GONE);
-        }
+        totalValue.setText("$0.00");
+        totalValue.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+
+        textDict.put("TOTAL", totalValue);
+
+        LinearLayout entriesLayout = findViewById(R.id.EntriesLayout);
+        CreateEntry("Date", entriesLayout);
 
         if (allPermissionsGranted()) {
             createCameraSource(selectedModel);
         } else {
             getRuntimePermissions();
         }
+    }
+
+    private void CreateEntry(String label, LinearLayout parent)
+    {
+        LinearLayout entryHLayout = new LinearLayout(this);
+        entryHLayout.setOrientation(LinearLayout.HORIZONTAL);
+
+        // label TextView
+        TextView labelText = new TextView(this);
+        labelText.setTextColor(Color.WHITE);
+        labelText.setTextSize(36f);
+        labelText.setText(label);
+        labelText.setLayoutParams(
+            new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+            ));
+
+        // dollar amount TextView
+        TextView valueText = new TextView(this);
+        valueText.setTextColor(Color.WHITE);
+        valueText.setTextSize(36f);
+        valueText.setText("$0.00");
+        valueText.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
+        valueText.setGravity(Gravity.RIGHT);
+        valueText.setLayoutParams(
+            new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+            ));
+
+        entryHLayout.addView(labelText);
+        entryHLayout.addView(valueText);
+
+        parent.addView(entryHLayout);
+
+        textDict.put(label, valueText);
     }
 
     @Override
@@ -180,7 +209,7 @@ public final class LivePreviewActivity extends AppCompatActivity
                     break;
                 case TEXT_DETECTION:
                     Log.i(TAG, "Using Text Detector Processor");
-                    cameraSource.setMachineLearningFrameProcessor(new TextRecognitionProcessor());
+                    cameraSource.setMachineLearningFrameProcessor(new TextRecognitionProcessor(textDict));
                     break;
                 case FACE_DETECTION:
                     Log.i(TAG, "Using Face Detector Processor");

@@ -26,7 +26,7 @@ import com.google.firebase.samples.apps.mlkit.common.GraphicOverlay.Graphic;
  * Graphic instance for rendering TextBlock position, size, and ID within an associated graphic
  * overlay view.
  */
-public class TextGraphic extends Graphic {
+public class TextGraphicBlock extends Graphic {
 
   private static final int TEXT_COLOR = Color.WHITE;
   private static final float TEXT_SIZE = 54.0f;
@@ -34,9 +34,9 @@ public class TextGraphic extends Graphic {
 
   private final Paint rectPaint;
   private final Paint textPaint;
-  private final FirebaseVisionText.Element text;
+  private final FirebaseVisionText.TextBlock text;
 
-  TextGraphic(GraphicOverlay overlay, FirebaseVisionText.Element text) {
+  TextGraphicBlock(GraphicOverlay overlay, FirebaseVisionText.TextBlock text) {
     super(overlay);
 
     this.text = text;
@@ -70,3 +70,4 @@ public class TextGraphic extends Graphic {
     canvas.drawText(text.getText(), rect.left, rect.bottom, textPaint);
   }
 }
+
