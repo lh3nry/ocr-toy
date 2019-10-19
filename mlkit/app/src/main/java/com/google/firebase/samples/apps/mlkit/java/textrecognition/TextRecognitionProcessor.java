@@ -173,6 +173,15 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
                     if (mmddyyyy.matcher(line.getText()).lookingAt()) {
                         GraphicOverlay.Graphic blockGraphic = new TextGraphicLine(graphicOverlay, line);
                         graphicOverlay.add(blockGraphic);
+
+                        Matcher match = mmddyyyy.matcher(line.getText());
+                        if (match.matches()) {
+                            String str = match.group();
+                            try {
+                                Date date = new SimpleDateFormat("MM/dd/yyyy").parse(str);
+                                outputMap.get("Date").setText(date.toString());
+                            } catch (ParseException parseX) {}
+                        }
                     }
                 }
             }
