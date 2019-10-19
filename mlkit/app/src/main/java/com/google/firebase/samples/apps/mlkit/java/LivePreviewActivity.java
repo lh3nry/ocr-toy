@@ -138,9 +138,7 @@ public final class LivePreviewActivity extends AppCompatActivity
         textDict.put("TOTAL", totalValue);
 
         LinearLayout entriesLayout = findViewById(R.id.EntriesLayout);
-        for (int i = 1; i <= 5; i++) {
-            CreateEntry("Label " + String.valueOf(i), entriesLayout);
-        }
+        CreateEntry("Date", entriesLayout);
 
         if (allPermissionsGranted()) {
             createCameraSource(selectedModel);
