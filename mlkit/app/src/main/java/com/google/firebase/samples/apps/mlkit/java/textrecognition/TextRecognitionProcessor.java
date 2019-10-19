@@ -69,8 +69,11 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
     }};
 
     Pattern checkMonths = Pattern.compile("^(Jan)|(Feb)|(Mar)|(Apr)|(May)|(Jun)|(Jul)|(Aug)|(Sep)|(Oct)|(Nov)|(Dec)*$");
+
     String mmddyyyy_str = "^\\d{1,2}/\\d{1,2}/\\d{4}";
     Pattern mmddyyyy = Pattern.compile(mmddyyyy_str);
+
+    Pattern totalPattern = Pattern.compile("^TOTAL");
 
     private final Map<String, String> DATE_FORMAT_REGEXPS = new HashMap<String, String>() {{
         put("^\\d{8}$", "yyyyMMdd");
@@ -135,7 +138,7 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         }
 
         for (FirebaseVisionText.TextBlock tmpBlock : results.getTextBlocks()) {
-            if (tmpBlock.getText().contains("TOTAL")) {
+            if (totalPattern.matcher(tmpBlock.getText()).lookingAt()) {
                 GraphicOverlay.Graphic blockGraphic = new TextGraphicBlock(graphicOverlay, tmpBlock);
                 graphicOverlay.add(blockGraphic);
                 List<FirebaseVisionText.Line> lines = tmpBlock.getLines();
