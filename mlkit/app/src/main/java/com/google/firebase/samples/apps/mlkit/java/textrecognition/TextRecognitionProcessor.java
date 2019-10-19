@@ -83,14 +83,12 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
             graphicOverlay.add(imageGraphic);
         }
 
-        FirebaseVisionText.TextBlock tmpBlock;
-        List<FirebaseVisionText.TextBlock> blocks = results.getTextBlocks();
-        for (int i = 0; i < blocks.size(); i++) {
-            tmpBlock = blocks.get(i);
+        Pattern checkMonths = Pattern.compile("^(Jan)|(Feb)|(Mar)|(Apr)|(May)|(Jun)|(Jul)|(Aug)|(Sep)|(Oct)|(Nov)|(Dec)*$");
+        for (FirebaseVisionText.TextBlock tmpBlock : results.getTextBlocks()) {
             if (tmpBlock.getText().contains("TOTAL")) {
                 GraphicOverlay.Graphic blockGraphic = new TextGraphicBlock(graphicOverlay, tmpBlock);
                 graphicOverlay.add(blockGraphic);
-                List<FirebaseVisionText.Line> lines = blocks.get(i).getLines();
+                List<FirebaseVisionText.Line> lines = tmpBlock.getLines();
                 for (int j = 0; j < lines.size(); j++) {
                     if (lines.get(j).getText().contains("TOTAL")) {
                         FirebaseVisionText.Line line = lines.get(j);
@@ -103,6 +101,10 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
                         j = lines.size();
                     }
                 }
+            }
+            else if (checkMonths.matcher(tmpBlock.getText()).lookingAt()) {
+                GraphicOverlay.Graphic blockGraphic = new TextGraphicBlock(graphicOverlay, tmpBlock);
+                graphicOverlay.add(blockGraphic);
             }
             else {
                 for (FirebaseVisionText.Line line : tmpBlock.getLines()) {
