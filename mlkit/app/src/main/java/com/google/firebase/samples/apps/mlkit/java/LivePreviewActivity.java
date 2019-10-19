@@ -102,33 +102,6 @@ public final class LivePreviewActivity extends AppCompatActivity
             Log.d(TAG, "graphicOverlay is null");
         }
 
-//        Spinner spinner = findViewById(R.id.spinner);
-//        List<String> options = new ArrayList<>();
-//        options.add(TEXT_DETECTION);
-//        options.add(FACE_CONTOUR);
-//        options.add(FACE_DETECTION);
-//        options.add(AUTOML_IMAGE_LABELING);
-//        options.add(OBJECT_DETECTION);
-//        options.add(BARCODE_DETECTION);
-//        options.add(IMAGE_LABEL_DETECTION);
-//        options.add(CLASSIFICATION_QUANT);
-//        options.add(CLASSIFICATION_FLOAT);
-//        // Creating adapter for spinner
-//        ArrayAdapter<String> dataAdapter = new ArrayAdapter<>(this, R.layout.spinner_style,
-//                options);
-//        // Drop down layout style - list view with radio button
-//        dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-//        // attaching data adapter to spinner
-//        spinner.setAdapter(dataAdapter);
-//        spinner.setOnItemSelectedListener(this);
-//
-//        ToggleButton facingSwitch = findViewById(R.id.facingSwitch);
-//        facingSwitch.setOnCheckedChangeListener(this);
-//        // Hide the toggle button if there is only 1 camera
-//        if (Camera.getNumberOfCameras() == 1) {
-//            facingSwitch.setVisibility(View.GONE);
-//        }
-
         totalLabel = findViewById(R.id.totalLabel);
         totalValue = findViewById(R.id.totalValue);
 
