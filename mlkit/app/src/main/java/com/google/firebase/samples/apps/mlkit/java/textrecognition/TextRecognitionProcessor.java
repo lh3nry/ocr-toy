@@ -38,6 +38,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -69,7 +70,7 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
 
     Pattern checkMonths = Pattern.compile("^(Jan)|(Feb)|(Mar)|(Apr)|(May)|(Jun)|(Jul)|(Aug)|(Sep)|(Oct)|(Nov)|(Dec)*$");
     String mmddyyyy_str = "^\\d{1,2}/\\d{1,2}/\\d{4}";
-    Pattern ddmmyyyy = Pattern.compile(mmddyyyy_str);
+    Pattern mmddyyyy = Pattern.compile(mmddyyyy_str);
 
     private final Map<String, String> DATE_FORMAT_REGEXPS = new HashMap<String, String>() {{
         put("^\\d{8}$", "yyyyMMdd");
@@ -169,7 +170,7 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
             }
             else if (tmpBlock.getText().contains("/")) {
                 for (FirebaseVisionText.Line line : tmpBlock.getLines()) {
-                    if (ddmmyyyy.matcher(line.getText()).lookingAt()) {
+                    if (mmddyyyy.matcher(line.getText()).lookingAt()) {
                         GraphicOverlay.Graphic blockGraphic = new TextGraphicLine(graphicOverlay, line);
                         graphicOverlay.add(blockGraphic);
                     }
