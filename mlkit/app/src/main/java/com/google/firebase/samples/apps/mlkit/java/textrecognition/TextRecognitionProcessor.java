@@ -125,14 +125,16 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
             else if (checkMonths.matcher(tmpBlock.getText()).lookingAt()) {
                 GraphicOverlay.Graphic blockGraphic = new TextGraphicBlock(graphicOverlay, tmpBlock);
                 graphicOverlay.add(blockGraphic);
-                if (tmpBlock.getLines().size() == 1) {
-                    FirebaseVisionText.Line line = tmpBlock.getLines().get(0);
-                    if (line.getElements().size() > 3) {
-                        processDateAbbrevMonth(line);
-                    }
-                    for (FirebaseVisionText.Element e : line.getElements()) {
-                        GraphicOverlay.Graphic elementGraphic = new TextGraphicElement(graphicOverlay, e);
-                        graphicOverlay.add(elementGraphic);
+
+                for ( FirebaseVisionText.Line line : tmpBlock.getLines() ) {
+                    if (checkMonths.matcher(line.getText()).lookingAt()) {
+                        if (line.getElements().size() > 3) {
+                            processDateAbbrevMonth(line);
+                        }
+                        for (FirebaseVisionText.Element e : line.getElements()) {
+                            GraphicOverlay.Graphic elementGraphic = new TextGraphicElement(graphicOverlay, e);
+                            graphicOverlay.add(elementGraphic);
+                        }
                     }
                 }
             }
