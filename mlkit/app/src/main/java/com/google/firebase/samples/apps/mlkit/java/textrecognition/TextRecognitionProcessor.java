@@ -31,6 +31,10 @@ import com.google.firebase.samples.apps.mlkit.java.VisionProcessorBase;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +51,21 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
 
     private Map<String, TextView> outputMap;
     private Map<String, Map<Float, Integer>> counterSet = new HashMap<>();
+
+    Map<String, Integer> abbrevMonths = new HashMap<String, Integer> () {{
+        put("Jan",  1);
+        put("Feb",  2);
+        put("Mar",  3);
+        put("Apr",  4);
+        put("May",  5);
+        put("Jun",  6);
+        put("Jul",  7);
+        put("Aug",  8);
+        put("Sep",  9);
+        put("Oct", 10);
+        put("Nov", 11);
+        put("Dec", 12);
+    }};
 
     Pattern checkMonths = Pattern.compile("^(Jan)|(Feb)|(Mar)|(Apr)|(May)|(Jun)|(Jul)|(Aug)|(Sep)|(Oct)|(Nov)|(Dec)*$");
     public TextRecognitionProcessor(Map<String, TextView> textDict) {
@@ -106,6 +125,16 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
             else if (checkMonths.matcher(tmpBlock.getText()).lookingAt()) {
                 GraphicOverlay.Graphic blockGraphic = new TextGraphicBlock(graphicOverlay, tmpBlock);
                 graphicOverlay.add(blockGraphic);
+                if (tmpBlock.getLines().size() == 1) {
+                    FirebaseVisionText.Line line = tmpBlock.getLines().get(0);
+                    if (line.getElements().size() > 3) {
+                        processDateAbbrevMonth(line);
+                    }
+                    for (FirebaseVisionText.Element e : line.getElements()) {
+                        GraphicOverlay.Graphic elementGraphic = new TextGraphicElement(graphicOverlay, e);
+                        graphicOverlay.add(elementGraphic);
+                    }
+                }
             }
             else {
                 for (FirebaseVisionText.Line line : tmpBlock.getLines()) {
@@ -129,6 +158,29 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         TotalRectHeight = -1;
     }
     
+    private void processDateAbbrevMonth(FirebaseVisionText.Line line) {
+        String monthText = line.getElements().get(0).getText();
+
+        int month = abbrevMonths.get(monthText);
+        int day = Integer.parseInt(line.getElements().get(1).getText()
+                .replace(",", "")
+                .replace(".", ""));
+        int year = Integer.parseInt(line.getElements().get(2).getText());
+
+        Date date;
+        try {
+            date = new SimpleDateFormat("dd-M-yyyy").parse(String.format("%d-%d-%d", day, month, year));
+        } catch (ParseException parseEx) {
+            Calendar cal = Calendar.getInstance();
+            cal.set(Calendar.YEAR, year);
+            cal.set(Calendar.MONTH, month - 1);
+            cal.set(Calendar.DAY_OF_MONTH, day);
+            date = cal.getTime();
+        }
+
+        outputMap.get("Date").setText(date.toString());
+    }
+
     private float FindMaxOccuring (Map<Float, Integer> countingMap){
         int max = -1;
         float maxKey = Float.NaN;
