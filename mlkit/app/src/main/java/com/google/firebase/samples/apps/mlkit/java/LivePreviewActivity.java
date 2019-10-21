@@ -85,6 +85,8 @@ public final class LivePreviewActivity extends AppCompatActivity
     private GraphicOverlay graphicOverlay;
     private String selectedModel = TEXT_DETECTION;
 
+    private Button vendorNameButton;
+
     private Dialog vendorDialog;
     private LinearLayout vendorList;
 
@@ -112,9 +114,8 @@ public final class LivePreviewActivity extends AppCompatActivity
         CreateEntry("TOTAL", "$0.00", entriesLayout);
         CreateEntry("Date", "??", entriesLayout);
 
-        Button clickButton = (Button) findViewById(R.id.vendorNameButton);
-        clickButton.setOnClickListener( new View.OnClickListener() {
-
+        vendorNameButton = findViewById(R.id.vendorNameButton);
+        vendorNameButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (vendorDialog == null) {
@@ -170,7 +171,11 @@ public final class LivePreviewActivity extends AppCompatActivity
         addButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                AddVendorButton(newVendorInput.getEditText().getText().toString());
+                String vendorName = newVendorInput.getEditText().getText().toString();
+                AddVendorButton(vendorName);
+                newVendorDialog.dismiss();
+                vendorNameButton.setText(vendorName);
+                vendorDialog.dismiss();
             }
         });
     }
@@ -195,7 +200,8 @@ public final class LivePreviewActivity extends AppCompatActivity
 
     private void VendorSelectionCallback(String vendorName)
     {
-
+        vendorNameButton.setText(vendorName);
+        vendorDialog.dismiss();
     }
 
     private void CreateEntry(String label, String defaultValue, LinearLayout parent)
