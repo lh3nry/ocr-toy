@@ -36,7 +36,10 @@
         </activity>
 
 
-        <activity android:name=".java.LivePreviewActivity" android:exported="true">
+        <activity
+            android:name=".java.LivePreviewActivity"
+            android:exported="true"
+            android:screenOrientation="portrait">
         </activity>
 
         <activity android:name=".kotlin.LivePreviewActivity" android:exported="true"/>
