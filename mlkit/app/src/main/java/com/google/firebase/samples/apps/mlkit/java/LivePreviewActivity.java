@@ -102,15 +102,9 @@ public final class LivePreviewActivity extends AppCompatActivity
             Log.d(TAG, "graphicOverlay is null");
         }
 
-        totalLabel = findViewById(R.id.totalLabel);
-        totalValue = findViewById(R.id.totalValue);
-
-        totalValue.setText("$0.00");
-        totalValue.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
-
-        textDict.put("TOTAL", totalValue);
 
         LinearLayout entriesLayout = findViewById(R.id.EntriesLayout);
+        CreateEntry("TOTAL", "$0.00", entriesLayout);
         CreateEntry("Date", "??", entriesLayout);
 
         if (allPermissionsGranted()) {
