@@ -44,4 +44,5 @@
 
     <string name="merchant_label">Vendor</string>
     <string name="new_vendor_button">New Vendor</string>
+    <string name="vendor_name_input_prompt">Enter Vendor Name</string>
 </resources>

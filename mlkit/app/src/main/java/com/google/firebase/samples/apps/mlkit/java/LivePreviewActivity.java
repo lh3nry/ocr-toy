@@ -86,6 +86,8 @@ public final class LivePreviewActivity extends AppCompatActivity
 
     private TextView totalLabel;
     private TextView totalValue;
+    private Dialog vendorDialog;
+    private Dialog newVendorDialog;
 
     private Map<String, TextView> textDict = new HashMap<>();
 
@@ -114,13 +116,10 @@ public final class LivePreviewActivity extends AppCompatActivity
             @Override
             public void onClick(View v) {
 
-                final Dialog dialog = new Dialog(LivePreviewActivity.this);
-                dialog.setContentView(R.layout.dialog_layout);
-                dialog.setTitle("Set Vendor");
-//                myNames= (ListView) dialog.findViewById(R.id.List);
-//                adapter = new Adapter(YourActivity.this,R.layout.names_view, Current.Names);
-//                myNames.setAdapter(adapter);
-                dialog.show();
+                if (vendorDialog == null) {
+                     SetupVendorDialog();
+                }
+                vendorDialog.show();
             }
         });
 
@@ -129,6 +128,31 @@ public final class LivePreviewActivity extends AppCompatActivity
         } else {
             getRuntimePermissions();
         }
+    }
+
+    private void SetupVendorDialog(){
+        vendorDialog = new Dialog(LivePreviewActivity.this);
+        vendorDialog.setContentView(R.layout.dialog_layout);
+        vendorDialog.setTitle("Set Vendor");
+
+
+        Button newVendorButton = vendorDialog.findViewById(R.id.newVendorButton);
+        newVendorButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (newVendorDialog == null) {
+                    SetupNewVendorDialog();
+                }
+
+                newVendorDialog.show();
+            }
+        });
+    }
+
+    private void SetupNewVendorDialog() {
+        newVendorDialog = new Dialog(LivePreviewActivity.this);
+        newVendorDialog.setContentView(R.layout.new_vendor_dialog);
+        newVendorDialog.setTitle("New Vendor");
     }
 
     private void CreateEntry(String label, String defaultValue, LinearLayout parent)
