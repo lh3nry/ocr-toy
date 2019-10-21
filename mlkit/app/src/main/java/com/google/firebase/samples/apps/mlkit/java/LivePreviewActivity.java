@@ -86,6 +86,8 @@ public final class LivePreviewActivity extends AppCompatActivity
     private String selectedModel = TEXT_DETECTION;
 
     private Dialog vendorDialog;
+    private LinearLayout vendorList;
+
     private Dialog newVendorDialog;
     private TextInputLayout newVendorInput;
 
@@ -134,6 +136,7 @@ public final class LivePreviewActivity extends AppCompatActivity
         vendorDialog.setContentView(R.layout.dialog_layout);
         vendorDialog.setTitle("Set Vendor");
 
+        vendorList = vendorDialog.findViewById(R.id.vendorButtonList);
 
         Button newVendorButton = vendorDialog.findViewById(R.id.newVendorButton);
         newVendorButton.setOnClickListener(new View.OnClickListener() {
@@ -158,6 +161,41 @@ public final class LivePreviewActivity extends AppCompatActivity
         newVendorDialog = new Dialog(LivePreviewActivity.this);
         newVendorDialog.setContentView(R.layout.new_vendor_dialog);
         newVendorDialog.setTitle("New Vendor");
+
+        if (newVendorInput == null) {
+            newVendorInput = newVendorDialog.findViewById(R.id.vendorNameInput);
+        }
+
+        Button addButton = newVendorDialog.findViewById(R.id.addNewVendorButton);
+        addButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                AddVendorButton(newVendorInput.getEditText().getText().toString());
+            }
+        });
+    }
+
+    private void AddVendorButton(final String buttonText) {
+        if (vendorDialog == null) {
+            throw new IllegalStateException("We do not have a reference to the vendor selection dialog!");
+        }
+
+        Button newButton = new Button(this);
+        newButton.setText(buttonText);
+        newButton.setTextSize(20f);
+        newButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                VendorSelectionCallback(buttonText);
+            }
+        });
+
+        vendorList.addView(newButton);
+    }
+
+    private void VendorSelectionCallback(String vendorName)
+    {
+
     }
 
     private void CreateEntry(String label, String defaultValue, LinearLayout parent)
