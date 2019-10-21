@@ -13,6 +13,7 @@
 // limitations under the License.
 package com.google.firebase.samples.apps.mlkit.java;
 
+import android.app.Dialog;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -24,6 +25,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -102,10 +104,25 @@ public final class LivePreviewActivity extends AppCompatActivity
             Log.d(TAG, "graphicOverlay is null");
         }
 
-
         LinearLayout entriesLayout = findViewById(R.id.EntriesLayout);
         CreateEntry("TOTAL", "$0.00", entriesLayout);
         CreateEntry("Date", "??", entriesLayout);
+
+        Button clickButton = (Button) findViewById(R.id.vendorNameButton);
+        clickButton.setOnClickListener( new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+
+                final Dialog dialog = new Dialog(LivePreviewActivity.this);
+                dialog.setContentView(R.layout.dialog_layout);
+                dialog.setTitle("Set Vendor");
+//                myNames= (ListView) dialog.findViewById(R.id.List);
+//                adapter = new Adapter(YourActivity.this,R.layout.names_view, Current.Names);
+//                myNames.setAdapter(adapter);
+                dialog.show();
+            }
+        });
 
         if (allPermissionsGranted()) {
             createCameraSource(selectedModel);
