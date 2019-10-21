@@ -111,7 +111,7 @@ public final class LivePreviewActivity extends AppCompatActivity
         textDict.put("TOTAL", totalValue);
 
         LinearLayout entriesLayout = findViewById(R.id.EntriesLayout);
-        CreateEntry("Date", entriesLayout);
+        CreateEntry("Date", "??", entriesLayout);
 
         if (allPermissionsGranted()) {
             createCameraSource(selectedModel);
@@ -120,7 +120,7 @@ public final class LivePreviewActivity extends AppCompatActivity
         }
     }
 
-    private void CreateEntry(String label, LinearLayout parent)
+    private void CreateEntry(String label, String defaultValue, LinearLayout parent)
     {
         LinearLayout entryHLayout = new LinearLayout(this);
         entryHLayout.setOrientation(LinearLayout.HORIZONTAL);
@@ -140,7 +140,7 @@ public final class LivePreviewActivity extends AppCompatActivity
         TextView valueText = new TextView(this);
         valueText.setTextColor(Color.WHITE);
         valueText.setTextSize(36f);
-        valueText.setText("$0.00");
+        valueText.setText(defaultValue);
         valueText.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         valueText.setGravity(Gravity.RIGHT);
         valueText.setLayoutParams(
