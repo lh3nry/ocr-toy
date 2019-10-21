@@ -38,6 +38,7 @@ import androidx.core.app.ActivityCompat.OnRequestPermissionsResultCallback;
 import androidx.core.content.ContextCompat;
 
 import com.google.android.gms.common.annotation.KeepName;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.ml.vision.objects.FirebaseVisionObjectDetectorOptions;
 import com.google.firebase.samples.apps.mlkit.R;
 import com.google.firebase.samples.apps.mlkit.common.CameraSource;
@@ -84,10 +85,9 @@ public final class LivePreviewActivity extends AppCompatActivity
     private GraphicOverlay graphicOverlay;
     private String selectedModel = TEXT_DETECTION;
 
-    private TextView totalLabel;
-    private TextView totalValue;
     private Dialog vendorDialog;
     private Dialog newVendorDialog;
+    private TextInputLayout newVendorInput;
 
     private Map<String, TextView> textDict = new HashMap<>();
 
@@ -115,7 +115,6 @@ public final class LivePreviewActivity extends AppCompatActivity
 
             @Override
             public void onClick(View v) {
-
                 if (vendorDialog == null) {
                      SetupVendorDialog();
                 }
@@ -142,6 +141,12 @@ public final class LivePreviewActivity extends AppCompatActivity
             public void onClick(View view) {
                 if (newVendorDialog == null) {
                     SetupNewVendorDialog();
+                }
+                else {
+                    if (newVendorInput == null) {
+                        newVendorInput = newVendorDialog.findViewById(R.id.vendorNameInput);
+                    }
+                    newVendorInput.getEditText().getText().clear();
                 }
 
                 newVendorDialog.show();
