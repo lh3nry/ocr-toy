@@ -13,6 +13,7 @@
 // limitations under the License.
 package com.google.firebase.samples.apps.mlkit.java;
 
+import android.app.Dialog;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -24,6 +25,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -36,6 +38,7 @@ import androidx.core.app.ActivityCompat.OnRequestPermissionsResultCallback;
 import androidx.core.content.ContextCompat;
 
 import com.google.android.gms.common.annotation.KeepName;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.ml.vision.objects.FirebaseVisionObjectDetectorOptions;
 import com.google.firebase.samples.apps.mlkit.R;
 import com.google.firebase.samples.apps.mlkit.common.CameraSource;
@@ -82,8 +85,13 @@ public final class LivePreviewActivity extends AppCompatActivity
     private GraphicOverlay graphicOverlay;
     private String selectedModel = TEXT_DETECTION;
 
-    private TextView totalLabel;
-    private TextView totalValue;
+    private Button vendorNameButton;
+
+    private Dialog vendorDialog;
+    private LinearLayout vendorList;
+
+    private Dialog newVendorDialog;
+    private TextInputLayout newVendorInput;
 
     private Map<String, TextView> textDict = new HashMap<>();
 
@@ -102,16 +110,20 @@ public final class LivePreviewActivity extends AppCompatActivity
             Log.d(TAG, "graphicOverlay is null");
         }
 
-        totalLabel = findViewById(R.id.totalLabel);
-        totalValue = findViewById(R.id.totalValue);
-
-        totalValue.setText("$0.00");
-        totalValue.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
-
-        textDict.put("TOTAL", totalValue);
-
         LinearLayout entriesLayout = findViewById(R.id.EntriesLayout);
-        CreateEntry("Date", entriesLayout);
+        CreateEntry("TOTAL", "$0.00", entriesLayout);
+        CreateEntry("Date", "??", entriesLayout);
+
+        vendorNameButton = findViewById(R.id.vendorNameButton);
+        vendorNameButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (vendorDialog == null) {
+                     SetupVendorDialog();
+                }
+                vendorDialog.show();
+            }
+        });
 
         if (allPermissionsGranted()) {
             createCameraSource(selectedModel);
@@ -120,7 +132,79 @@ public final class LivePreviewActivity extends AppCompatActivity
         }
     }
 
-    private void CreateEntry(String label, LinearLayout parent)
+    private void SetupVendorDialog(){
+        vendorDialog = new Dialog(LivePreviewActivity.this);
+        vendorDialog.setContentView(R.layout.dialog_layout);
+        vendorDialog.setTitle("Set Vendor");
+
+        vendorList = vendorDialog.findViewById(R.id.vendorButtonList);
+
+        Button newVendorButton = vendorDialog.findViewById(R.id.newVendorButton);
+        newVendorButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (newVendorDialog == null) {
+                    SetupNewVendorDialog();
+                }
+                else {
+                    if (newVendorInput == null) {
+                        newVendorInput = newVendorDialog.findViewById(R.id.vendorNameInput);
+                    }
+                    newVendorInput.getEditText().getText().clear();
+                }
+
+                newVendorDialog.show();
+            }
+        });
+    }
+
+    private void SetupNewVendorDialog() {
+        newVendorDialog = new Dialog(LivePreviewActivity.this);
+        newVendorDialog.setContentView(R.layout.new_vendor_dialog);
+        newVendorDialog.setTitle("New Vendor");
+
+        if (newVendorInput == null) {
+            newVendorInput = newVendorDialog.findViewById(R.id.vendorNameInput);
+        }
+
+        Button addButton = newVendorDialog.findViewById(R.id.addNewVendorButton);
+        addButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String vendorName = newVendorInput.getEditText().getText().toString();
+                AddVendorButton(vendorName);
+                newVendorDialog.dismiss();
+                vendorNameButton.setText(vendorName);
+                vendorDialog.dismiss();
+            }
+        });
+    }
+
+    private void AddVendorButton(final String buttonText) {
+        if (vendorDialog == null) {
+            throw new IllegalStateException("We do not have a reference to the vendor selection dialog!");
+        }
+
+        Button newButton = new Button(this);
+        newButton.setText(buttonText);
+        newButton.setTextSize(20f);
+        newButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                VendorSelectionCallback(buttonText);
+            }
+        });
+
+        vendorList.addView(newButton);
+    }
+
+    private void VendorSelectionCallback(String vendorName)
+    {
+        vendorNameButton.setText(vendorName);
+        vendorDialog.dismiss();
+    }
+
+    private void CreateEntry(String label, String defaultValue, LinearLayout parent)
     {
         LinearLayout entryHLayout = new LinearLayout(this);
         entryHLayout.setOrientation(LinearLayout.HORIZONTAL);
@@ -140,7 +224,7 @@ public final class LivePreviewActivity extends AppCompatActivity
         TextView valueText = new TextView(this);
         valueText.setTextColor(Color.WHITE);
         valueText.setTextSize(36f);
-        valueText.setText("$0.00");
+        valueText.setText(defaultValue);
         valueText.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         valueText.setGravity(Gravity.RIGHT);
         valueText.setLayoutParams(

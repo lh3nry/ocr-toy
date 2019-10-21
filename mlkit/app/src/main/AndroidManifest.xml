@@ -29,14 +29,18 @@
             android:name="com.google.firebase.samples.apps.mlkit.EntryChoiceActivity"
             android:exported="true"
             android:label="@string/app_name">
+        </activity>
+
+
+        <activity
+            android:name=".java.LivePreviewActivity"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-
-
-        <activity android:name=".java.LivePreviewActivity" android:exported="true">
         </activity>
 
         <activity android:name=".kotlin.LivePreviewActivity" android:exported="true"/>

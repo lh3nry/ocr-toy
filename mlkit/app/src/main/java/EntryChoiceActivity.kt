@@ -12,7 +12,7 @@ class EntryChoiceActivity : BaseEntryChoiceActivity() {
                         "Java",
                         "Run the Firebase ML Kit quickstart written in Java.",
                         Intent(this,
-                                com.google.firebase.samples.apps.mlkit.java.ChooserActivity::class.java)),
+                                com.google.firebase.samples.apps.mlkit.java.LivePreviewActivity::class.java)),
                 Choice(
                         "Kotlin",
                         "Run the Firebase ML Kit quickstart written in Kotlin.",

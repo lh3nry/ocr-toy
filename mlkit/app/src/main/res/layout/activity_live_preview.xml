@@ -54,25 +54,21 @@
                 android:orientation="horizontal">
 
                 <TextView
-                    android:id="@+id/totalLabel"
+                    android:id="@+id/textView"
                     android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:gravity="center|center_horizontal"
-                    android:text="TOTAL"
-                    android:textAlignment="gravity"
-                    android:textAppearance="@style/TextAppearance.AppCompat.Large"
+                    android:layout_height="wrap_content"
+                    android:text="@string/merchant_label"
                     android:textColor="#FFFFFF"
-                    android:textSize="36sp"
-                    android:textStyle="bold"
-                    android:typeface="normal"
-                    tools:text="TOTAL" />
+                    android:textSize="36sp" />
 
-                <TextView
-                    android:id="@+id/totalValue"
+                <Button
+                    android:id="@+id/vendorNameButton"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center|right"
-                    android:text="TextView"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center|end"
+                    android:background="#000000"
+                    android:gravity="center|end"
+                    android:text="?"
                     android:textAlignment="gravity"
                     android:textColor="#FFFFFF"
                     android:textSize="36sp" />
