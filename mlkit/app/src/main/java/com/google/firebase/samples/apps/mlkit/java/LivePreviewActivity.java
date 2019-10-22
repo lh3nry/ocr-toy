@@ -101,6 +101,7 @@ public final class LivePreviewActivity extends AppCompatActivity
     private Map<String, TextView> textDict = new HashMap<>();
 
     private final String OUTPUT_DIR_NAME = "/OCRCSV";
+    private final String OUTPUT_FILE_COMMON_NAME = "/Export.csv";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -153,7 +154,7 @@ public final class LivePreviewActivity extends AppCompatActivity
             public void run() {
                 try {
 
-                    FileWriter fw = new FileWriter(filename);
+                    FileWriter fw = new FileWriter(filename, true);
 
                     fw.append("No");
                     fw.append(',');
