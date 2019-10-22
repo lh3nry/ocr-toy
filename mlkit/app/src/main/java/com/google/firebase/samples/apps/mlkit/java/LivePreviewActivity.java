@@ -112,7 +112,9 @@ public final class LivePreviewActivity extends AppCompatActivity
         }
         else {
             for (File f : targetDir.listFiles()) {
-                f.getName();
+                if (f.isDirectory()) {
+                    AddVendorButton(f.getName());
+                }
             }
         }
 
