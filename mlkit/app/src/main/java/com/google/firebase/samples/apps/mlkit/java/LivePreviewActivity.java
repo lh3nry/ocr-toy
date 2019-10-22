@@ -19,6 +19,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -53,6 +54,7 @@ import com.google.firebase.samples.apps.mlkit.java.imagelabeling.ImageLabelingPr
 import com.google.firebase.samples.apps.mlkit.java.objectdetection.ObjectDetectorProcessor;
 import com.google.firebase.samples.apps.mlkit.java.textrecognition.TextRecognitionProcessor;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -101,6 +103,15 @@ public final class LivePreviewActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate");
         setContentView(R.layout.activity_live_preview);
+
+        File targetDir = new File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) + "/testOutput");
+        if (!targetDir.exists()){
+            targetDir.mkdirs();
+        }
+
+        final String filename = targetDir.toString() + "/" + "Test.csv";
+        TestWrite(filename);
+
 
         preview = findViewById(R.id.firePreview);
         if (preview == null) {
