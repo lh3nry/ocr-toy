@@ -90,6 +90,8 @@ public final class LivePreviewActivity extends AppCompatActivity
 
     private Button vendorNameButton;
 
+    File targetDir;
+
     private Dialog vendorDialog;
     private LinearLayout vendorList;
 
@@ -106,16 +108,9 @@ public final class LivePreviewActivity extends AppCompatActivity
         Log.d(TAG, "onCreate");
         setContentView(R.layout.activity_live_preview);
 
-        File targetDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + OUTPUT_DIR_NAME);
+        targetDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + OUTPUT_DIR_NAME);
         if (!targetDir.exists()){
             targetDir.mkdirs();
-        }
-        else {
-            for (File f : targetDir.listFiles()) {
-                if (f.isDirectory()) {
-                    AddVendorButton(f.getName());
-                }
-            }
         }
 
         final String filename = targetDir.toString() + "/" + "Test.csv";
@@ -212,6 +207,12 @@ public final class LivePreviewActivity extends AppCompatActivity
         vendorDialog.setTitle("Set Vendor");
 
         vendorList = vendorDialog.findViewById(R.id.vendorButtonList);
+
+        for (File f : targetDir.listFiles()) {
+            if (f.isDirectory()) {
+                AddVendorButton(f.getName());
+            }
+        }
 
         Button newVendorButton = vendorDialog.findViewById(R.id.newVendorButton);
         newVendorButton.setOnClickListener(new View.OnClickListener() {
