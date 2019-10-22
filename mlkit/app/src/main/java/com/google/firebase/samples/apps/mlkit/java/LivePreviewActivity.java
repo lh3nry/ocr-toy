@@ -53,6 +53,7 @@ import com.google.firebase.samples.apps.mlkit.java.imagelabeling.ImageLabelingPr
 import com.google.firebase.samples.apps.mlkit.java.objectdetection.ObjectDetectorProcessor;
 import com.google.firebase.samples.apps.mlkit.java.textrecognition.TextRecognitionProcessor;
 
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -130,6 +131,59 @@ public final class LivePreviewActivity extends AppCompatActivity
         } else {
             getRuntimePermissions();
         }
+    }
+
+    private void TestWrite(final String filename) {
+        new Thread() {
+            public void run() {
+                try {
+
+                    FileWriter fw = new FileWriter(filename);
+
+                    fw.append("No");
+                    fw.append(',');
+
+                    fw.append("code");
+                    fw.append(',');
+
+                    fw.append("nr");
+                    fw.append(',');
+
+                    fw.append("Orde");
+                    fw.append(',');
+
+                    fw.append("Da");
+                    fw.append(',');
+
+                    fw.append("Date");
+                    fw.append(',');
+
+                    fw.append("Leverancier");
+                    fw.append(',');
+
+                    fw.append("Baaln");
+                    fw.append(',');
+
+                    fw.append("asd");
+                    fw.append(',');
+
+                    fw.append("Kwaliteit");
+                    fw.append(',');
+
+                    fw.append("asd");
+                    fw.append(',');
+
+                    fw.append('\n');
+
+
+
+                    // fw.flush();
+                    fw.close();
+
+                } catch (Exception e) {
+                }
+            }
+        }.start();
     }
 
     private void SetupVendorDialog(){
