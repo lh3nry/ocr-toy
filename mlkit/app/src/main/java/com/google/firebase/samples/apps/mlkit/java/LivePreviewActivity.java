@@ -98,15 +98,22 @@ public final class LivePreviewActivity extends AppCompatActivity
 
     private Map<String, TextView> textDict = new HashMap<>();
 
+    private final String OUTPUT_DIR_NAME = "/OCRCSV";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate");
         setContentView(R.layout.activity_live_preview);
 
-        File targetDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + "/testOutput");
+        File targetDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + OUTPUT_DIR_NAME);
         if (!targetDir.exists()){
             targetDir.mkdirs();
+        }
+        else {
+            for (File f : targetDir.listFiles()) {
+                f.getName();
+            }
         }
 
         final String filename = targetDir.toString() + "/" + "Test.csv";
