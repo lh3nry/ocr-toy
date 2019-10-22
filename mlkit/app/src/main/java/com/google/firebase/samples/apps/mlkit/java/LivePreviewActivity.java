@@ -269,6 +269,7 @@ public final class LivePreviewActivity extends AppCompatActivity
         Button newButton = new Button(this);
         newButton.setText(buttonText);
         newButton.setTextSize(20f);
+        newButton.setAllCaps(false);
         newButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
