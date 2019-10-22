@@ -114,7 +114,7 @@ public final class LivePreviewActivity extends AppCompatActivity
             targetDir.mkdirs();
         }
 
-        final String filename = targetDir.toString() + "/" + "Test.csv";
+        final String filename = targetDir.toString() + OUTPUT_FILE_COMMON_NAME;
         TestWrite(filename);
 
 
@@ -147,6 +147,26 @@ public final class LivePreviewActivity extends AppCompatActivity
         } else {
             getRuntimePermissions();
         }
+    }
+
+    private void WriteHeader(final String filename, final String[] headers) {
+        new Thread() {
+            public void run () {
+
+                try {
+                    FileWriter writer = new FileWriter(filename);
+                    for (String header : headers) {
+                        writer.append(header);
+                        writer.append(",");
+                    }
+
+                    writer.append("\n");
+                    writer.close();
+                } catch (Exception e) {
+
+                }
+            }
+        }.start();
     }
 
     private void TestWrite(final String filename) {
@@ -249,9 +269,11 @@ public final class LivePreviewActivity extends AppCompatActivity
             public void onClick(View view) {
                 String vendorName = newVendorInput.getEditText().getText().toString();
 
-                File newVendorDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + OUTPUT_DIR_NAME + "/" + vendorName);
+                String dirPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + OUTPUT_DIR_NAME + "/" + vendorName;
+                File newVendorDir = new File(dirPath);
                 if (!newVendorDir.exists()){
                     newVendorDir.mkdirs();
+                    WriteHeader(dirPath + OUTPUT_FILE_COMMON_NAME, textDict.keySet().toArray(new String[textDict.size()]));
                 }
 
                 AddVendorButton(vendorName);
