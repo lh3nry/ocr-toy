@@ -11,12 +11,14 @@
         <com.google.android.material.textfield.TextInputEditText
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/vendor_name_input_prompt" />
+            android:hint="@string/vendor_name_input_prompt"
+            android:textAllCaps="false" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <Button
         android:id="@+id/addNewVendorButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Add" />
+        android:text="Add"
+        android:textAllCaps="true" />
 </LinearLayout>
