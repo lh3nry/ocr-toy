@@ -268,6 +268,11 @@ public final class LivePreviewActivity extends AppCompatActivity
             @Override
             public void onClick(View view) {
                 String vendorName = newVendorInput.getEditText().getText().toString();
+                if (vendorName == null || vendorName.isEmpty()){
+                    newVendorInput.getEditText().setHint("You must set a vendor name!");
+                    newVendorInput.getEditText().setHintTextColor(Color.RED);
+                    return;
+                }
 
                 String dirPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + OUTPUT_DIR_NAME + "/" + vendorName;
                 File newVendorDir = new File(dirPath);
