@@ -104,7 +104,7 @@ public final class LivePreviewActivity extends AppCompatActivity
         Log.d(TAG, "onCreate");
         setContentView(R.layout.activity_live_preview);
 
-        File targetDir = new File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) + "/testOutput");
+        File targetDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + "/testOutput");
         if (!targetDir.exists()){
             targetDir.mkdirs();
         }
