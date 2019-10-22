@@ -89,6 +89,7 @@ public final class LivePreviewActivity extends AppCompatActivity
     private String selectedModel = TEXT_DETECTION;
 
     private Button vendorNameButton;
+    private Button saveButton;
 
     File targetDir;
 
@@ -130,6 +131,9 @@ public final class LivePreviewActivity extends AppCompatActivity
         LinearLayout entriesLayout = findViewById(R.id.EntriesLayout);
         CreateEntry("TOTAL", "$0.00", entriesLayout);
         CreateEntry("Date", "??", entriesLayout);
+
+        saveButton = findViewById(R.id.saveButton);
+        saveButton.setVisibility(View.GONE);
 
         vendorNameButton = findViewById(R.id.vendorNameButton);
         vendorNameButton.setOnClickListener(new View.OnClickListener() {
@@ -285,6 +289,7 @@ public final class LivePreviewActivity extends AppCompatActivity
                 newVendorDialog.dismiss();
                 vendorNameButton.setText(vendorName);
                 vendorDialog.dismiss();
+                saveButton.setVisibility(View.VISIBLE);
             }
         });
     }
@@ -312,6 +317,7 @@ public final class LivePreviewActivity extends AppCompatActivity
     {
         vendorNameButton.setText(vendorName);
         vendorDialog.dismiss();
+        saveButton.setVisibility(View.VISIBLE);
     }
 
     private void CreateEntry(String label, String defaultValue, LinearLayout parent)
