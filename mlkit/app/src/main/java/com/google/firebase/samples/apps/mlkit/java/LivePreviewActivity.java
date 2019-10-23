@@ -19,6 +19,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -53,11 +54,16 @@ import com.google.firebase.samples.apps.mlkit.java.imagelabeling.ImageLabelingPr
 import com.google.firebase.samples.apps.mlkit.java.objectdetection.ObjectDetectorProcessor;
 import com.google.firebase.samples.apps.mlkit.java.textrecognition.TextRecognitionProcessor;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.StringTokenizer;
 
 /**
  * Demo app showing the various features of ML Kit for Firebase. This class is used to
@@ -86,6 +92,9 @@ public final class LivePreviewActivity extends AppCompatActivity
     private String selectedModel = TEXT_DETECTION;
 
     private Button vendorNameButton;
+    private Button saveButton;
+
+    File targetDir;
 
     private Dialog vendorDialog;
     private LinearLayout vendorList;
@@ -95,11 +104,19 @@ public final class LivePreviewActivity extends AppCompatActivity
 
     private Map<String, TextView> textDict = new HashMap<>();
 
+    private final String OUTPUT_DIR_NAME = "/OCRCSV";
+    private final String OUTPUT_FILE_COMMON_NAME = "/Export.csv";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate");
         setContentView(R.layout.activity_live_preview);
+
+        targetDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + OUTPUT_DIR_NAME);
+        if (!targetDir.exists()){
+            targetDir.mkdirs();
+        }
 
         preview = findViewById(R.id.firePreview);
         if (preview == null) {
@@ -113,6 +130,15 @@ public final class LivePreviewActivity extends AppCompatActivity
         LinearLayout entriesLayout = findViewById(R.id.EntriesLayout);
         CreateEntry("TOTAL", "$0.00", entriesLayout);
         CreateEntry("Date", "??", entriesLayout);
+
+        saveButton = findViewById(R.id.saveButton);
+        saveButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                OnSaveTapped();
+            }
+        });
+        saveButton.setVisibility(View.GONE);
 
         vendorNameButton = findViewById(R.id.vendorNameButton);
         vendorNameButton.setOnClickListener(new View.OnClickListener() {
@@ -132,12 +158,96 @@ public final class LivePreviewActivity extends AppCompatActivity
         }
     }
 
+    private void OnSaveTapped() {
+        if (vendorNameButton.getText() == "?") {
+            // Shouldn't be able to press before assigning a vendor due to visibility.
+            throw new IllegalStateException("Vendor name unknown.");
+        }
+
+        String csvPath = GetCurrentPath(vendorNameButton.getText().toString()) + OUTPUT_FILE_COMMON_NAME;
+        File exported = new File(csvPath);
+        if (exported.exists()){
+            try {
+                FileReader reader = new FileReader(exported);
+                BufferedReader buffReader = new BufferedReader(reader);
+                String headers = buffReader.readLine();
+                buffReader.close();
+                reader.close();
+
+                StringTokenizer tokenizer = new StringTokenizer(headers, ",");
+                int numColumns = tokenizer.countTokens();
+
+                if (numColumns != textDict.size()) {
+                    throw new IllegalStateException(
+                            "There is a mismatch in the number of header columns ("
+                                    + numColumns
+                                    +") and number of entries ("
+                                    + textDict.size()
+                                    +") in the TextView dictionary");
+                }
+
+                FileWriter writer = new FileWriter(exported, true);
+                writer.append(ConstructCSVLine(tokenizer));
+
+                writer.close();
+
+            } catch (Exception e) {
+
+            }
+        }
+    }
+
+    private String ConstructCSVLine(StringTokenizer tokenizer)
+    {
+        StringBuilder sb = new StringBuilder();
+        String token;
+        while (tokenizer.hasMoreTokens()) {
+            token = tokenizer.nextToken();
+            if (textDict.containsKey(token)) {
+                sb.append(textDict.get(token).getText());
+                sb.append(",");
+            }
+            else {
+                sb.append("***,");
+            }
+        }
+        sb.append("\n");
+
+        return sb.toString();
+    }
+
+    private void WriteHeader(final String filename, final String[] headers) {
+        new Thread() {
+            public void run () {
+
+                try {
+                    FileWriter writer = new FileWriter(filename);
+                    for (String header : headers) {
+                        writer.append(header);
+                        writer.append(",");
+                    }
+
+                    writer.append("\n");
+                    writer.close();
+                } catch (Exception e) {
+
+                }
+            }
+        }.start();
+    }
+
     private void SetupVendorDialog(){
         vendorDialog = new Dialog(LivePreviewActivity.this);
         vendorDialog.setContentView(R.layout.dialog_layout);
         vendorDialog.setTitle("Set Vendor");
 
         vendorList = vendorDialog.findViewById(R.id.vendorButtonList);
+
+        for (File f : targetDir.listFiles()) {
+            if (f.isDirectory()) {
+                AddVendorButton(f.getName());
+            }
+        }
 
         Button newVendorButton = vendorDialog.findViewById(R.id.newVendorButton);
         newVendorButton.setOnClickListener(new View.OnClickListener() {
@@ -158,6 +268,12 @@ public final class LivePreviewActivity extends AppCompatActivity
         });
     }
 
+    private String GetCurrentPath(String vendorName) {
+        return Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                + OUTPUT_DIR_NAME
+                + "/" + vendorName;
+    }
+
     private void SetupNewVendorDialog() {
         newVendorDialog = new Dialog(LivePreviewActivity.this);
         newVendorDialog.setContentView(R.layout.new_vendor_dialog);
@@ -172,10 +288,24 @@ public final class LivePreviewActivity extends AppCompatActivity
             @Override
             public void onClick(View view) {
                 String vendorName = newVendorInput.getEditText().getText().toString();
+                if (vendorName == null || vendorName.isEmpty()){
+                    newVendorInput.getEditText().setHint("You must set a vendor name!");
+                    newVendorInput.getEditText().setHintTextColor(Color.RED);
+                    return;
+                }
+
+                String dirPath = GetCurrentPath(vendorName);
+                File newVendorDir = new File(dirPath);
+                if (!newVendorDir.exists()){
+                    newVendorDir.mkdirs();
+                    WriteHeader(dirPath + OUTPUT_FILE_COMMON_NAME, textDict.keySet().toArray(new String[textDict.size()]));
+                }
+
                 AddVendorButton(vendorName);
                 newVendorDialog.dismiss();
                 vendorNameButton.setText(vendorName);
                 vendorDialog.dismiss();
+                saveButton.setVisibility(View.VISIBLE);
             }
         });
     }
@@ -188,6 +318,7 @@ public final class LivePreviewActivity extends AppCompatActivity
         Button newButton = new Button(this);
         newButton.setText(buttonText);
         newButton.setTextSize(20f);
+        newButton.setAllCaps(false);
         newButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -202,6 +333,7 @@ public final class LivePreviewActivity extends AppCompatActivity
     {
         vendorNameButton.setText(vendorName);
         vendorDialog.dismiss();
+        saveButton.setVisibility(View.VISIBLE);
     }
 
     private void CreateEntry(String label, String defaultValue, LinearLayout parent)
