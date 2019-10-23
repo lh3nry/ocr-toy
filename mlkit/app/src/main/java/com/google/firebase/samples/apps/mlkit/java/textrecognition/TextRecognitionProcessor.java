@@ -224,9 +224,10 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
                 .replace(".", ""));
         int year = Integer.parseInt(line.getElements().get(2).getText());
 
+        SimpleDateFormat outputFormat = new SimpleDateFormat("MM/dd/yyyy");
         Date date;
         try {
-            date = new SimpleDateFormat("dd-M-yyyy").parse(String.format("%d-%d-%d", day, month, year));
+            date = outputFormat.parse(String.format("%d/%d/%d", month, day, year));
         } catch (ParseException parseEx) {
             Calendar cal = Calendar.getInstance();
             cal.set(Calendar.YEAR, year);
@@ -235,7 +236,7 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
             date = cal.getTime();
         }
 
-        outputMap.get("Date").setText(date.toString());
+        outputMap.get("Date").setText(outputFormat.format(date));
     }
 
     private float FindMaxOccuring (Map<Float, Integer> countingMap){
