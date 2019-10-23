@@ -118,10 +118,6 @@ public final class LivePreviewActivity extends AppCompatActivity
             targetDir.mkdirs();
         }
 
-        final String filename = targetDir.toString() + OUTPUT_FILE_COMMON_NAME;
-        TestWrite(filename);
-
-
         preview = findViewById(R.id.firePreview);
         if (preview == null) {
             Log.d(TAG, "Preview is null");
@@ -235,59 +231,6 @@ public final class LivePreviewActivity extends AppCompatActivity
                     writer.close();
                 } catch (Exception e) {
 
-                }
-            }
-        }.start();
-    }
-
-    private void TestWrite(final String filename) {
-        new Thread() {
-            public void run() {
-                try {
-
-                    FileWriter fw = new FileWriter(filename, true);
-
-                    fw.append("No");
-                    fw.append(',');
-
-                    fw.append("code");
-                    fw.append(',');
-
-                    fw.append("nr");
-                    fw.append(',');
-
-                    fw.append("Orde");
-                    fw.append(',');
-
-                    fw.append("Da");
-                    fw.append(',');
-
-                    fw.append("Date");
-                    fw.append(',');
-
-                    fw.append("Leverancier");
-                    fw.append(',');
-
-                    fw.append("Baaln");
-                    fw.append(',');
-
-                    fw.append("asd");
-                    fw.append(',');
-
-                    fw.append("Kwaliteit");
-                    fw.append(',');
-
-                    fw.append("asd");
-                    fw.append(',');
-
-                    fw.append('\n');
-
-
-
-                    // fw.flush();
-                    fw.close();
-
-                } catch (Exception e) {
                 }
             }
         }.start();
