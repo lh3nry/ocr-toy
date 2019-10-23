@@ -68,10 +68,11 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         put("Dec", 12);
     }};
 
-    Pattern checkMonths = Pattern.compile("^(Jan)|(Feb)|(Mar)|(Apr)|(May)|(Jun)|(Jul)|(Aug)|(Sep)|(Oct)|(Nov)|(Dec)*$");
+    String mmddyyyy = "(.*?)(\\d{1,2}/\\d{1,2}/\\d{4})(.*)";
+    Pattern mmddyyyyPattern = Pattern.compile(mmddyyyy, Pattern.DOTALL);
 
-    String mmddyyyy_str = "(.*?)(\\d{1,2}/\\d{1,2}/\\d{4})(.*)";
-    Pattern mmddyyyy = Pattern.compile(mmddyyyy_str, Pattern.DOTALL);
+    String abbrevMonth = "((?:Jan)|(?:Feb)|(?:Mar)|(?:Apr)|(?:May)|(?:Jun)|(?:Jul)|(?:Aug)|(?:Sep)|(?:Oct)|(?:Nov)|(?:Dec))(.*?)(\\d{1,2})(.*)(\\d{4})";
+    Pattern abbrevMonthPattern = Pattern.compile(abbrevMonth, Pattern.DOTALL);
 
     Pattern totalPattern = Pattern.compile("^TOTAL");
 
@@ -79,7 +80,7 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         put("^\\d{8}$", "yyyyMMdd");
         put("^\\d{1,2}-\\d{1,2}-\\d{4}$", "dd-MM-yyyy");
         put("^\\d{4}-\\d{1,2}-\\d{1,2}$", "yyyy-MM-dd");
-        put(mmddyyyy_str, "MM/dd/yyyy");
+        put(mmddyyyy, "MM/dd/yyyy");
         put("^\\d{4}/\\d{1,2}/\\d{1,2}$", "yyyy/MM/dd");
         put("^\\d{1,2}\\s[a-z]{3}\\s\\d{4}$", "dd MMM yyyy");
         put("^\\d{1,2}\\s[a-z]{4,}\\s\\d{4}$", "dd MMMM yyyy");
@@ -162,27 +163,17 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
                     }
                 }
             }
-            else if (checkMonths.matcher(tmpBlock.getText()).lookingAt()) {
+            else if (abbrevMonthPattern.matcher(tmpBlock.getText()).lookingAt()) {
                 GraphicOverlay.Graphic blockGraphic = new TextGraphicBlock(graphicOverlay, tmpBlock);
                 graphicOverlay.add(blockGraphic);
 
-                for ( FirebaseVisionText.Line line : tmpBlock.getLines() ) {
-                    if (checkMonths.matcher(line.getText()).lookingAt()) {
-                        if (line.getElements().size() > 3) {
-                            processDateAbbrevMonth(line);
-                        }
-                        for (FirebaseVisionText.Element e : line.getElements()) {
-                            GraphicOverlay.Graphic elementGraphic = new TextGraphicElement(graphicOverlay, e);
-                            graphicOverlay.add(elementGraphic);
-                        }
-                    }
-                }
+                processDateAbbrevMonth(tmpBlock);
             }
             else if (tmpBlock.getText().contains("/")) {
                 GraphicOverlay.Graphic blockGraphic = new TextGraphicBlock(graphicOverlay, tmpBlock);
                 graphicOverlay.add(blockGraphic);
 
-                Matcher match = mmddyyyy.matcher(tmpBlock.getText());
+                Matcher match = mmddyyyyPattern.matcher(tmpBlock.getText());
 
                 if (match.matches()) {
                     String str = match.group(2);
@@ -214,29 +205,32 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         TotalYValueMidPoint = -1;
         TotalRectHeight = -1;
     }
-    
-    private void processDateAbbrevMonth(FirebaseVisionText.Line line) {
-        String monthText = line.getElements().get(0).getText();
 
-        int month = abbrevMonths.get(monthText);
-        int day = Integer.parseInt(line.getElements().get(1).getText()
-                .replace(",", "")
-                .replace(".", ""));
-        int year = Integer.parseInt(line.getElements().get(2).getText());
+    private void processDateAbbrevMonth(FirebaseVisionText.TextBlock tmpBlock) {
+        Matcher dateMatcher = abbrevMonthPattern.matcher(tmpBlock.getText());
+        if (dateMatcher.lookingAt()) {
+            String monthStr = dateMatcher.group(1);
+            String dayStr = dateMatcher.group(3);
+            String yearStr = dateMatcher.group(5);
 
-        SimpleDateFormat outputFormat = new SimpleDateFormat("MM/dd/yyyy");
-        Date date;
-        try {
-            date = outputFormat.parse(String.format("%d/%d/%d", month, day, year));
-        } catch (ParseException parseEx) {
-            Calendar cal = Calendar.getInstance();
-            cal.set(Calendar.YEAR, year);
-            cal.set(Calendar.MONTH, month - 1);
-            cal.set(Calendar.DAY_OF_MONTH, day);
-            date = cal.getTime();
+            int month = abbrevMonths.get(monthStr);
+            int day = Integer.parseInt(dayStr);
+            int year = Integer.parseInt(yearStr);
+
+            SimpleDateFormat outputFormat = new SimpleDateFormat("MM/dd/yyyy");
+            Date date;
+            try {
+                date = outputFormat.parse(String.format("%d/%d/%d", month, day, year));
+            } catch (ParseException parseX) {
+                Calendar cal = Calendar.getInstance();
+                cal.set(Calendar.YEAR, year);
+                cal.set(Calendar.MONTH, month - 1);
+                cal.set(Calendar.DAY_OF_MONTH, day);
+                date = cal.getTime();
+            }
+
+            outputMap.get("Date").setText(outputFormat.format(date));
         }
-
-        outputMap.get("Date").setText(outputFormat.format(date));
     }
 
     private float FindMaxOccuring (Map<Float, Integer> countingMap){
