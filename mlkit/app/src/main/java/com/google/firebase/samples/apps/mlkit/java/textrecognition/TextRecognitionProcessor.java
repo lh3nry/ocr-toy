@@ -70,8 +70,8 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
 
     Pattern checkMonths = Pattern.compile("^(Jan)|(Feb)|(Mar)|(Apr)|(May)|(Jun)|(Jul)|(Aug)|(Sep)|(Oct)|(Nov)|(Dec)*$");
 
-    String mmddyyyy_str = "^\\d{1,2}/\\d{1,2}/\\d{4}";
-    Pattern mmddyyyy = Pattern.compile(mmddyyyy_str);
+    String mmddyyyy_str = "(.*?)(\\d{1,2}/\\d{1,2}/\\d{4})(.*)";
+    Pattern mmddyyyy = Pattern.compile(mmddyyyy_str, Pattern.DOTALL);
 
     Pattern totalPattern = Pattern.compile("^TOTAL");
 
@@ -179,21 +179,35 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
                 }
             }
             else if (tmpBlock.getText().contains("/")) {
-                for (FirebaseVisionText.Line line : tmpBlock.getLines()) {
-                    if (mmddyyyy.matcher(line.getText()).lookingAt()) {
-                        GraphicOverlay.Graphic blockGraphic = new TextGraphicLine(graphicOverlay, line);
-                        graphicOverlay.add(blockGraphic);
+                GraphicOverlay.Graphic blockGraphic = new TextGraphicBlock(graphicOverlay, tmpBlock);
+                graphicOverlay.add(blockGraphic);
 
-                        Matcher match = mmddyyyy.matcher(line.getText());
-                        if (match.matches()) {
-                            String str = match.group();
-                            try {
-                                Date date = new SimpleDateFormat("MM/dd/yyyy").parse(str);
-                                outputMap.get("Date").setText(date.toString());
-                            } catch (ParseException parseX) {}
-                        }
-                    }
+                Matcher match = mmddyyyy.matcher(tmpBlock.getText());
+//                if (match.lookingAt()) {
+//
+//                }
+                if (match.matches()) {
+                String str = match.group(2);
+                    try {
+                        Date date = new SimpleDateFormat("MM/dd/yyyy").parse(str);
+                        outputMap.get("Date").setText(date.toString());
+                    } catch (ParseException parseX) {}
                 }
+//                for (FirebaseVisionText.Line line : tmpBlock.getLines()) {
+//                    if (mmddyyyy.matcher(line.getText()).lookingAt()) {
+//                        GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
+//                        graphicOverlay.add(lineGraphic);
+//
+//                        Matcher match = mmddyyyy.matcher(line.getText());
+//                        if (match.matches()) {
+//                            String str = match.group();
+//                            try {
+//                                Date date = new SimpleDateFormat("MM/dd/yyyy").parse(str);
+//                                outputMap.get("Date").setText(date.toString());
+//                            } catch (ParseException parseX) {}
+//                        }
+//                    }
+//                }
             }
             else {
                 for (FirebaseVisionText.Line line : tmpBlock.getLines()) {
