@@ -83,6 +83,7 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         put("^\\d{4}/\\d{1,2}/\\d{1,2}$", "yyyy/MM/dd");
         put("^\\d{1,2}\\s[a-z]{3}\\s\\d{4}$", "dd MMM yyyy");
         put("^\\d{1,2}\\s[a-z]{4,}\\s\\d{4}$", "dd MMMM yyyy");
+
         put("^\\d{12}$", "yyyyMMddHHmm");
         put("^\\d{8}\\s\\d{4}$", "yyyyMMdd HHmm");
         put("^\\d{1,2}-\\d{1,2}-\\d{4}\\s\\d{1,2}:\\d{2}$", "dd-MM-yyyy HH:mm");
@@ -156,8 +157,7 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
                         TotalYValueMidPoint = (line.getBoundingBox().top + line.getBoundingBox().bottom) / 2f;
                         GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, lines.get(j));
                         graphicOverlay.add(lineGraphic);
-//                        lineGraphic = new TextGraphicLine(graphicOverlay, lines.get(j));
-//                        graphicOverlay.add(lineGraphic);
+
                         j = lines.size();
                     }
                 }
@@ -183,31 +183,15 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
                 graphicOverlay.add(blockGraphic);
 
                 Matcher match = mmddyyyy.matcher(tmpBlock.getText());
-//                if (match.lookingAt()) {
-//
-//                }
+
                 if (match.matches()) {
-                String str = match.group(2);
+                    String str = match.group(2);
+                    SimpleDateFormat outputFormat = new SimpleDateFormat("MM/dd/yyyy");
                     try {
-                        Date date = new SimpleDateFormat("MM/dd/yyyy").parse(str);
-                        outputMap.get("Date").setText(date.toString());
+                        Date date = outputFormat.parse(str);
+                        outputMap.get("Date").setText(outputFormat.format(date));
                     } catch (ParseException parseX) {}
                 }
-//                for (FirebaseVisionText.Line line : tmpBlock.getLines()) {
-//                    if (mmddyyyy.matcher(line.getText()).lookingAt()) {
-//                        GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
-//                        graphicOverlay.add(lineGraphic);
-//
-//                        Matcher match = mmddyyyy.matcher(line.getText());
-//                        if (match.matches()) {
-//                            String str = match.group();
-//                            try {
-//                                Date date = new SimpleDateFormat("MM/dd/yyyy").parse(str);
-//                                outputMap.get("Date").setText(date.toString());
-//                            } catch (ParseException parseX) {}
-//                        }
-//                    }
-//                }
             }
             else {
                 for (FirebaseVisionText.Line line : tmpBlock.getLines()) {
