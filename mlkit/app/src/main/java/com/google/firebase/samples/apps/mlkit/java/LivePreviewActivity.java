@@ -54,6 +54,8 @@ import com.google.firebase.samples.apps.mlkit.java.imagelabeling.ImageLabelingPr
 import com.google.firebase.samples.apps.mlkit.java.objectdetection.ObjectDetectorProcessor;
 import com.google.firebase.samples.apps.mlkit.java.textrecognition.TextRecognitionProcessor;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -106,6 +108,7 @@ public final class LivePreviewActivity extends AppCompatActivity
 
     private final String OUTPUT_DIR_NAME = "/OCRCSV";
     private final String OUTPUT_FILE_COMMON_NAME = "/Export.csv";
+    private TextRecognitionProcessor textRecognitionProcessor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -191,6 +194,8 @@ public final class LivePreviewActivity extends AppCompatActivity
 
                 writer.close();
 
+                textRecognitionProcessor.needToClearData = true;
+
             } catch (Exception e) {
 
             }
@@ -268,6 +273,7 @@ public final class LivePreviewActivity extends AppCompatActivity
         });
     }
 
+    @NotNull
     private String GetCurrentPath(String vendorName) {
         return Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
                 + OUTPUT_DIR_NAME
@@ -306,6 +312,7 @@ public final class LivePreviewActivity extends AppCompatActivity
                 vendorNameButton.setText(vendorName);
                 vendorDialog.dismiss();
                 saveButton.setVisibility(View.VISIBLE);
+                textRecognitionProcessor.needToClearData = true;
             }
         });
     }
@@ -334,6 +341,7 @@ public final class LivePreviewActivity extends AppCompatActivity
         vendorNameButton.setText(vendorName);
         vendorDialog.dismiss();
         saveButton.setVisibility(View.VISIBLE);
+        textRecognitionProcessor.needToClearData = true;
     }
 
     private void CreateEntry(String label, String defaultValue, LinearLayout parent)
@@ -425,7 +433,8 @@ public final class LivePreviewActivity extends AppCompatActivity
                     break;
                 case TEXT_DETECTION:
                     Log.i(TAG, "Using Text Detector Processor");
-                    cameraSource.setMachineLearningFrameProcessor(new TextRecognitionProcessor(textDict));
+                    textRecognitionProcessor = new TextRecognitionProcessor(textDict);
+                    cameraSource.setMachineLearningFrameProcessor(textRecognitionProcessor);
                     break;
                 case FACE_DETECTION:
                     Log.i(TAG, "Using Face Detector Processor");

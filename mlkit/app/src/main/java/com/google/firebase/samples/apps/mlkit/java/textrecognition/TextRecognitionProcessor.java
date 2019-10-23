@@ -101,6 +101,8 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         put("^\\d{1,2}\\s[a-z]{4,}\\s\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "dd MMMM yyyy HH:mm:ss");
     }};
 
+    public boolean needToClearData = false;
+
     public TextRecognitionProcessor(Map<String, TextView> textDict) {
         detector = FirebaseVision.getInstance().getOnDeviceTextRecognizer();
         outputMap = textDict;
@@ -135,6 +137,11 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
             CameraImageGraphic imageGraphic = new CameraImageGraphic(graphicOverlay,
                     originalCameraImage);
             graphicOverlay.add(imageGraphic);
+        }
+
+        if (needToClearData) {
+            counterSet.clear();
+            needToClearData = false;
         }
 
         for (FirebaseVisionText.TextBlock tmpBlock : results.getTextBlocks()) {
