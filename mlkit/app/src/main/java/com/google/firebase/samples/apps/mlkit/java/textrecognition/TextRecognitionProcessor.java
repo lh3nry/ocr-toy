@@ -41,6 +41,23 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+class TextLineMetadata {
+    public Pattern searchable;
+    public float YValueMidPoint = -1;
+    public float RectHeight = -1;
+
+    public String adjacent;
+
+    public TextLineMetadata(String regex, int patternFlags) {
+        searchable = Pattern.compile(regex, patternFlags);
+    }
+
+    public void Reset() {
+        YValueMidPoint = -1;
+        RectHeight = -1;
+    }
+}
+
 /**
  * Processor for the text recognition demo.
  */
@@ -68,13 +85,16 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         put("Dec", 12);
     }};
 
-    String mmddyyyy = "(.*?)(\\d{1,2}/\\d{1,2}/\\d{4})(.*)";
-    Pattern mmddyyyyPattern = Pattern.compile(mmddyyyy, Pattern.DOTALL);
+    private String mmddyyyy = "(.*?)(\\d{1,2}/\\d{1,2}/\\d{4})(.*)";
+    private Pattern mmddyyyyPattern = Pattern.compile(mmddyyyy, Pattern.DOTALL);
 
-    String abbrevMonth = "((?:Jan)|(?:Feb)|(?:Mar)|(?:Apr)|(?:May)|(?:Jun)|(?:Jul)|(?:Aug)|(?:Sep)|(?:Oct)|(?:Nov)|(?:Dec))(.*?)(\\d{1,2})(.*)(\\d{4})";
-    Pattern abbrevMonthPattern = Pattern.compile(abbrevMonth, Pattern.DOTALL);
-
-    Pattern totalPattern = Pattern.compile("^TOTAL");
+    private String abbrevMonth = "((?:Jan)|(?:Feb)|(?:Mar)|(?:Apr)|(?:May)|(?:Jun)|(?:Jul)|(?:Aug)|(?:Sep)|(?:Oct)|(?:Nov)|(?:Dec))(.*?)(\\d{1,2})(.*)(\\d{4})";
+    private Pattern abbrevMonthPattern = Pattern.compile(abbrevMonth, Pattern.DOTALL);
+    
+    private float NearnessThreshold = 3;
+    private TextLineMetadata total;
+    private TextLineMetadata pst;
+    private TextLineMetadata gst;
 
     private final Map<String, String> DATE_FORMAT_REGEXPS = new HashMap<String, String>() {{
         put("^\\d{8}$", "yyyyMMdd");
@@ -108,6 +128,10 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
     public TextRecognitionProcessor(Map<String, TextView> textDict) {
         detector = FirebaseVision.getInstance().getOnDeviceTextRecognizer();
         outputMap = textDict;
+
+        total = new TextLineMetadata("^TOTAL", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
+        gst = new TextLineMetadata("5(\\.(0*))?%", 0);
+        pst = new TextLineMetadata("7(\\.(0*))?%", 0);
     }
 
     @Override
@@ -124,9 +148,6 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         return detector.processImage(image);
     }
 
-    private float TotalYValueMidPoint = -1;
-    private float TotalRectHeight = -1;
-    private float NearnessThreshold = 3;
 
     @Override
     protected void onSuccess(
@@ -147,16 +168,15 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         }
 
         for (FirebaseVisionText.TextBlock tmpBlock : results.getTextBlocks()) {
-            if (totalPattern.matcher(tmpBlock.getText()).lookingAt()) {
+            if (total.searchable.matcher(tmpBlock.getText()).lookingAt()) {
                 GraphicOverlay.Graphic blockGraphic = new TextGraphicBlock(graphicOverlay, tmpBlock);
                 graphicOverlay.add(blockGraphic);
                 List<FirebaseVisionText.Line> lines = tmpBlock.getLines();
                 for (int j = 0; j < lines.size(); j++) {
-                    if (lines.get(j).getText().contains("TOTAL")) {
+                    if (total.searchable.matcher(lines.get(j).getText()).lookingAt()) {
                         FirebaseVisionText.Line line = lines.get(j);
-                        TotalRectHeight = line.getBoundingBox().top - line.getBoundingBox().bottom;
-                        TotalYValueMidPoint = (line.getBoundingBox().top + line.getBoundingBox().bottom) / 2f;
-                        GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, lines.get(j));
+                        ExtractAdjacent(line, total);
+                        GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
                         graphicOverlay.add(lineGraphic);
 
                         j = lines.size();
@@ -184,26 +204,58 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
                     } catch (ParseException parseX) {}
                 }
             }
+            else if (tmpBlock.getText().contains("%")) {
+                GraphicOverlay.Graphic blockGraphic = new TextGraphicBlock(graphicOverlay, tmpBlock);
+                graphicOverlay.add(blockGraphic);
+                for (FirebaseVisionText.Line line : tmpBlock.getLines()) {
+                    GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
+                    graphicOverlay.add(lineGraphic);
+                    if (pst.searchable.matcher(line.getText()).lookingAt()) {
+
+                        ExtractAdjacent(line, pst);
+                    }
+                    if (gst.searchable.matcher(line.getText()).lookingAt()) {
+//                        GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
+//                        graphicOverlay.add(lineGraphic);
+                        ExtractAdjacent(line, gst);
+                    }
+                }
+            }
             else {
                 for (FirebaseVisionText.Line line : tmpBlock.getLines()) {
-                    float lineMidPoint = (line.getBoundingBox().top + line.getBoundingBox().bottom) / 2f;
-                    if (Math.abs(lineMidPoint - TotalYValueMidPoint) < NearnessThreshold) {
-                        GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
-                        graphicOverlay.add(lineGraphic);
-                        if (line.getText().contains("$")){
+                    if (Pattern.compile("\\d{1,2}(.*)\\d{1,2}").matcher(line.getText()).lookingAt()) {
+                        float lineMidPoint = (line.getBoundingBox().top + line.getBoundingBox().bottom) / 2f;
+                        if (Math.abs(lineMidPoint - total.YValueMidPoint) < NearnessThreshold) {
+                            GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
+                            graphicOverlay.add(lineGraphic);
                             processText(line.getText());
                         }
-                        else{
-                            processText(line.getText());
+                        else if (Math.abs(lineMidPoint - pst.YValueMidPoint) < NearnessThreshold) {
+                            GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
+                            graphicOverlay.add(lineGraphic);
                         }
+                        else if (Math.abs(lineMidPoint - gst.YValueMidPoint) < NearnessThreshold) {
+                            GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
+                            graphicOverlay.add(lineGraphic);
+                        }
+//                    else if (Pattern.compile("\\d{1,2}(.*)\\d{1,2}").matcher(line.getText()).lookingAt()) {
+//                        GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
+//                        graphicOverlay.add(lineGraphic);
+//                    }
                     }
                 }
             }
         }
 
         graphicOverlay.postInvalidate();
-        TotalYValueMidPoint = -1;
-        TotalRectHeight = -1;
+        total.Reset();
+        gst.Reset();
+        pst.Reset();
+    }
+
+    private void ExtractAdjacent(FirebaseVisionText.Line line, TextLineMetadata metadata) {
+        metadata.RectHeight = line.getBoundingBox().top - line.getBoundingBox().bottom;
+        metadata.YValueMidPoint = (line.getBoundingBox().top + line.getBoundingBox().bottom) / 2f;
     }
 
     private void processDateAbbrevMonth(FirebaseVisionText.TextBlock tmpBlock) {
