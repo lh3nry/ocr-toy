@@ -73,25 +73,13 @@ import java.util.StringTokenizer;
  */
 @KeepName
 public final class LivePreviewActivity extends AppCompatActivity
-        implements OnRequestPermissionsResultCallback,
-        OnItemSelectedListener,
-        CompoundButton.OnCheckedChangeListener {
-    private static final String FACE_DETECTION = "Face Detection";
-    private static final String OBJECT_DETECTION = "Object Detection";
-    private static final String AUTOML_IMAGE_LABELING = "AutoML Vision Edge";
-    private static final String TEXT_DETECTION = "Text Detection";
-    private static final String BARCODE_DETECTION = "Barcode Detection";
-    private static final String IMAGE_LABEL_DETECTION = "Label Detection";
-    private static final String CLASSIFICATION_QUANT = "Classification (quantized)";
-    private static final String CLASSIFICATION_FLOAT = "Classification (float)";
-    private static final String FACE_CONTOUR = "Face Contour";
+        implements OnRequestPermissionsResultCallback {
     private static final String TAG = "LivePreviewActivity";
     private static final int PERMISSION_REQUESTS = 1;
 
     private CameraSource cameraSource = null;
     private CameraSourcePreview preview;
     private GraphicOverlay graphicOverlay;
-    private String selectedModel = TEXT_DETECTION;
 
     private Button vendorNameButton;
     private Button saveButton;
@@ -155,7 +143,7 @@ public final class LivePreviewActivity extends AppCompatActivity
         });
 
         if (allPermissionsGranted()) {
-            createCameraSource(selectedModel);
+            createCameraSource();
         } else {
             getRuntimePermissions();
         }
@@ -381,94 +369,18 @@ public final class LivePreviewActivity extends AppCompatActivity
         textDict.put(label, valueText);
     }
 
-    @Override
-    public synchronized void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-        // An item was selected. You can retrieve the selected item using
-        // parent.getItemAtPosition(pos)
-        selectedModel = parent.getItemAtPosition(pos).toString();
-        Log.d(TAG, "Selected model: " + selectedModel);
-        preview.stop();
-        if (allPermissionsGranted()) {
-            createCameraSource(selectedModel);
-            startCameraSource();
-        } else {
-            getRuntimePermissions();
-        }
-    }
 
-    @Override
-    public void onNothingSelected(AdapterView<?> parent) {
-        // Do nothing.
-    }
-
-    @Override
-    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-        Log.d(TAG, "Set facing");
-        if (cameraSource != null) {
-            if (isChecked) {
-                cameraSource.setFacing(CameraSource.CAMERA_FACING_FRONT);
-            } else {
-                cameraSource.setFacing(CameraSource.CAMERA_FACING_BACK);
-            }
-        }
-        preview.stop();
-        startCameraSource();
-    }
-
-    private void createCameraSource(String model) {
+    private void createCameraSource() {
         // If there's no existing cameraSource, create one.
         if (cameraSource == null) {
             cameraSource = new CameraSource(this, graphicOverlay);
         }
 
         try {
-            switch (model) {
-                case CLASSIFICATION_QUANT:
-                    Log.i(TAG, "Using Custom Image Classifier (quant) Processor");
-                    cameraSource.setMachineLearningFrameProcessor(new CustomImageClassifierProcessor(this, true));
-                    break;
-                case CLASSIFICATION_FLOAT:
-                    Log.i(TAG, "Using Custom Image Classifier (float) Processor");
-                    cameraSource.setMachineLearningFrameProcessor(new CustomImageClassifierProcessor(this, false));
-                    break;
-                case TEXT_DETECTION:
-                    Log.i(TAG, "Using Text Detector Processor");
-                    textRecognitionProcessor = new TextRecognitionProcessor(textDict);
-                    cameraSource.setMachineLearningFrameProcessor(textRecognitionProcessor);
-                    break;
-                case FACE_DETECTION:
-                    Log.i(TAG, "Using Face Detector Processor");
-                    cameraSource.setMachineLearningFrameProcessor(new FaceDetectionProcessor(getResources()));
-                    break;
-                case AUTOML_IMAGE_LABELING:
-                    cameraSource.setMachineLearningFrameProcessor(new AutoMLImageLabelerProcessor(this));
-                    break;
-                case OBJECT_DETECTION:
-                    Log.i(TAG, "Using Object Detector Processor");
-                    FirebaseVisionObjectDetectorOptions objectDetectorOptions =
-                            new FirebaseVisionObjectDetectorOptions.Builder()
-                                    .setDetectorMode(FirebaseVisionObjectDetectorOptions.STREAM_MODE)
-                                    .enableClassification().build();
-                    cameraSource.setMachineLearningFrameProcessor(
-                            new ObjectDetectorProcessor(objectDetectorOptions));
-                    break;
-                case BARCODE_DETECTION:
-                    Log.i(TAG, "Using Barcode Detector Processor");
-                    cameraSource.setMachineLearningFrameProcessor(new BarcodeScanningProcessor());
-                    break;
-                case IMAGE_LABEL_DETECTION:
-                    Log.i(TAG, "Using Image Label Detector Processor");
-                    cameraSource.setMachineLearningFrameProcessor(new ImageLabelingProcessor());
-                    break;
-                case FACE_CONTOUR:
-                    Log.i(TAG, "Using Face Contour Detector Processor");
-                    cameraSource.setMachineLearningFrameProcessor(new FaceContourDetectorProcessor());
-                    break;
-                default:
-                    Log.e(TAG, "Unknown model: " + model);
-            }
+            textRecognitionProcessor = new TextRecognitionProcessor(textDict);
+            cameraSource.setMachineLearningFrameProcessor(textRecognitionProcessor);
         } catch (Exception e) {
-            Log.e(TAG, "Can not create image processor: " + model, e);
+            Log.e(TAG, "Can not create image processor", e);
             Toast.makeText(
                     getApplicationContext(),
                     "Can not create image processor: " + e.getMessage(),
@@ -568,7 +480,7 @@ public final class LivePreviewActivity extends AppCompatActivity
             int requestCode, String[] permissions, @NonNull int[] grantResults) {
         Log.i(TAG, "Permission granted!");
         if (allPermissionsGranted()) {
-            createCameraSource(selectedModel);
+            createCameraSource();
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
