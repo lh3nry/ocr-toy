@@ -16,6 +16,10 @@ package com.google.firebase.samples.apps.mlkit.java.textrecognition;
 import android.graphics.Bitmap;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import android.renderscript.Allocation;
+import android.renderscript.RenderScript;
+import android.renderscript.ScriptIntrinsicYuvToRGB;
 import android.util.Log;
 import android.widget.TextView;
 
@@ -108,6 +112,19 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
     public TextRecognitionProcessor(Map<String, TextView> textDict) {
         detector = FirebaseVision.getInstance().getOnDeviceTextRecognizer();
         outputMap = textDict;
+    }
+
+    public TextRecognitionProcessor(Map<String, TextView> textDict, RenderScript rs, ScriptIntrinsicYuvToRGB yuvToRGBin, Bitmap bitmapIn, Allocation in, Allocation out) {
+        detector = FirebaseVision.getInstance().getOnDeviceTextRecognizer();
+        outputMap = textDict;
+
+        renderScript = rs;
+        yuvToRGB = yuvToRGBin;
+
+        aIn = in;
+        aOut = out;
+
+        bitmap = bitmapIn;
     }
 
     @Override

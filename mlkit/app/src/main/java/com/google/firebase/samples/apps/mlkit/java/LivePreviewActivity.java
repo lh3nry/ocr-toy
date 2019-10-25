@@ -17,9 +17,15 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Environment;
+import android.renderscript.Allocation;
+import android.renderscript.Element;
+import android.renderscript.RenderScript;
+import android.renderscript.ScriptIntrinsic;
+import android.renderscript.ScriptIntrinsicYuvToRGB;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -97,6 +103,11 @@ public final class LivePreviewActivity extends AppCompatActivity
     private final String OUTPUT_DIR_NAME = "/OCRCSV";
     private final String OUTPUT_FILE_COMMON_NAME = "/Export.csv";
     private TextRecognitionProcessor textRecognitionProcessor;
+    private RenderScript renderScript;
+    private ScriptIntrinsicYuvToRGB yuvToRGB;
+    private Allocation aIn;
+    private Allocation aOut;
+    private Bitmap bmpout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -147,6 +158,16 @@ public final class LivePreviewActivity extends AppCompatActivity
         } else {
             getRuntimePermissions();
         }
+
+        renderScript = RenderScript.create(this);
+        yuvToRGB = ScriptIntrinsicYuvToRGB.create(renderScript, Element.U8_4(renderScript));
+
+        int yuvDatalength = CameraSource.requestedPreviewWidth * CameraSource.requestedPreviewHeight * 3 / 2;
+        aIn = Allocation.createSized(renderScript, Element.U8(renderScript), yuvDatalength);
+
+        bmpout = Bitmap.createBitmap(CameraSource.requestedPreviewWidth, CameraSource.requestedPreviewHeight, Bitmap.Config.ARGB_8888);
+        aOut = Allocation.createFromBitmap(renderScript, bmpout);
+        yuvToRGB.setInput(aIn);
     }
 
     private void OnSaveTapped() {
@@ -377,7 +398,7 @@ public final class LivePreviewActivity extends AppCompatActivity
         }
 
         try {
-            textRecognitionProcessor = new TextRecognitionProcessor(textDict);
+            textRecognitionProcessor = new TextRecognitionProcessor(textDict, renderScript, yuvToRGB, bmpout, aIn, aOut);
             cameraSource.setMachineLearningFrameProcessor(textRecognitionProcessor);
         } catch (Exception e) {
             Log.e(TAG, "Can not create image processor", e);

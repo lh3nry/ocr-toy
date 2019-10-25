@@ -14,6 +14,9 @@
 package com.google.firebase.samples.apps.mlkit.java;
 
 import android.graphics.Bitmap;
+import android.renderscript.Allocation;
+import android.renderscript.RenderScript;
+import android.renderscript.ScriptIntrinsicYuvToRGB;
 
 import androidx.annotation.GuardedBy;
 import androidx.annotation.NonNull;
@@ -55,6 +58,11 @@ public abstract class VisionProcessorBase<T> implements VisionImageProcessor {
     @GuardedBy("this")
 
     private FrameMetadata processingMetaData;
+
+    protected RenderScript renderScript;
+    protected ScriptIntrinsicYuvToRGB yuvToRGB;
+    protected Allocation aIn, aOut;
+    protected Bitmap bitmap;
 
     public VisionProcessorBase() {
     }
@@ -99,7 +107,12 @@ public abstract class VisionProcessorBase<T> implements VisionImageProcessor {
                         .setRotation(frameMetadata.getRotation())
                         .build();
 
-        Bitmap bitmap = BitmapUtils.getBitmap(data, frameMetadata);
+//        Bitmap bitmap = BitmapUtils.getBitmap(data, frameMetadata);
+
+        aIn.copyFrom(data);
+        yuvToRGB.forEach(aOut);
+        aOut.copyTo(bitmap);
+
         detectInVisionImage(
                 bitmap, FirebaseVisionImage.fromByteBuffer(data, metadata), frameMetadata,
                 graphicOverlay);

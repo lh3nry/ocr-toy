@@ -8,6 +8,11 @@ import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.hardware.Camera.CameraInfo;
 import androidx.annotation.Nullable;
+
+import android.renderscript.Allocation;
+import android.renderscript.Element;
+import android.renderscript.RenderScript;
+import android.renderscript.ScriptIntrinsicYuvToRGB;
 import android.util.Log;
 import com.google.firebase.ml.vision.common.FirebaseVisionImageMetadata;
 import java.io.ByteArrayOutputStream;
@@ -39,6 +44,28 @@ public class BitmapUtils {
             Log.e("VisionProcessorBase", "Error: " + e.getMessage());
         }
         return null;
+    }
+
+    public static Bitmap getBitmap(RenderScript rs, ScriptIntrinsicYuvToRGB yuvToRGB, ByteBuffer data, FrameMetadata metadata) {
+        data.rewind();
+        byte[] imageInBuffer = new byte[data.limit()];
+        data.get(imageInBuffer, 0, imageInBuffer.length);
+
+        int yuvDatalength = metadata.getWidth() * metadata.getHeight() * 3 / 2;
+        Allocation aIn = Allocation.createSized(rs, Element.U8(rs), yuvDatalength);
+
+        Bitmap bmpout = Bitmap.createBitmap(metadata.getWidth(), metadata.getHeight(), Bitmap.Config.ARGB_8888);
+        Allocation aOut = Allocation.createFromBitmap(rs, bmpout);
+        yuvToRGB.setInput(aIn);
+
+        aIn.copyFrom(data);
+
+        yuvToRGB.forEach(aOut);
+
+        aOut.copyTo(bmpout);
+
+
+        return bmpout;
     }
 
     // Rotates a bitmap if it is converted from a bytebuffer.
