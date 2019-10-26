@@ -159,36 +159,38 @@ public final class LivePreviewActivity extends AppCompatActivity
 
         String csvPath = GetCurrentPath(vendorNameButton.getText().toString()) + OUTPUT_FILE_COMMON_NAME;
         File exported = new File(csvPath);
-        if (exported.exists()){
-            try {
-                FileReader reader = new FileReader(exported);
-                BufferedReader buffReader = new BufferedReader(reader);
-                String headers = buffReader.readLine();
-                buffReader.close();
-                reader.close();
+        if (!exported.exists()){
+            WriteHeader(GetCurrentPath(vendorNameButton.getText().toString()) + OUTPUT_FILE_COMMON_NAME,  textDict.keySet().toArray(new String[textDict.size()]));
+        }
 
-                StringTokenizer tokenizer = new StringTokenizer(headers, ",");
-                int numColumns = tokenizer.countTokens();
+        try {
+            FileReader reader = new FileReader(exported);
+            BufferedReader buffReader = new BufferedReader(reader);
+            String headers = buffReader.readLine();
+            buffReader.close();
+            reader.close();
 
-                if (numColumns != textDict.size()) {
-                    throw new IllegalStateException(
-                            "There is a mismatch in the number of header columns ("
-                                    + numColumns
-                                    +") and number of entries ("
-                                    + textDict.size()
-                                    +") in the TextView dictionary");
-                }
+            StringTokenizer tokenizer = new StringTokenizer(headers, ",");
+            int numColumns = tokenizer.countTokens();
 
-                FileWriter writer = new FileWriter(exported, true);
-                writer.append(ConstructCSVLine(tokenizer));
-
-                writer.close();
-
-                textRecognitionProcessor.needToClearData = true;
-
-            } catch (Exception e) {
-
+            if (numColumns != textDict.size()) {
+                throw new IllegalStateException(
+                        "There is a mismatch in the number of header columns ("
+                                + numColumns
+                                +") and number of entries ("
+                                + textDict.size()
+                                +") in the TextView dictionary");
             }
+
+            FileWriter writer = new FileWriter(exported, true);
+            writer.append(ConstructCSVLine(tokenizer));
+
+            writer.close();
+
+            textRecognitionProcessor.needToClearData = true;
+
+        } catch (Exception e) {
+
         }
     }
 
