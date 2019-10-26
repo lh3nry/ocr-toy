@@ -54,6 +54,8 @@ import com.google.firebase.samples.apps.mlkit.java.imagelabeling.ImageLabelingPr
 import com.google.firebase.samples.apps.mlkit.java.objectdetection.ObjectDetectorProcessor;
 import com.google.firebase.samples.apps.mlkit.java.textrecognition.TextRecognitionProcessor;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -71,25 +73,13 @@ import java.util.StringTokenizer;
  */
 @KeepName
 public final class LivePreviewActivity extends AppCompatActivity
-        implements OnRequestPermissionsResultCallback,
-        OnItemSelectedListener,
-        CompoundButton.OnCheckedChangeListener {
-    private static final String FACE_DETECTION = "Face Detection";
-    private static final String OBJECT_DETECTION = "Object Detection";
-    private static final String AUTOML_IMAGE_LABELING = "AutoML Vision Edge";
-    private static final String TEXT_DETECTION = "Text Detection";
-    private static final String BARCODE_DETECTION = "Barcode Detection";
-    private static final String IMAGE_LABEL_DETECTION = "Label Detection";
-    private static final String CLASSIFICATION_QUANT = "Classification (quantized)";
-    private static final String CLASSIFICATION_FLOAT = "Classification (float)";
-    private static final String FACE_CONTOUR = "Face Contour";
+        implements OnRequestPermissionsResultCallback {
     private static final String TAG = "LivePreviewActivity";
     private static final int PERMISSION_REQUESTS = 1;
 
     private CameraSource cameraSource = null;
     private CameraSourcePreview preview;
     private GraphicOverlay graphicOverlay;
-    private String selectedModel = TEXT_DETECTION;
 
     private Button vendorNameButton;
     private Button saveButton;
@@ -106,6 +96,7 @@ public final class LivePreviewActivity extends AppCompatActivity
 
     private final String OUTPUT_DIR_NAME = "/OCRCSV";
     private final String OUTPUT_FILE_COMMON_NAME = "/Export.csv";
+    private TextRecognitionProcessor textRecognitionProcessor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -129,6 +120,8 @@ public final class LivePreviewActivity extends AppCompatActivity
 
         LinearLayout entriesLayout = findViewById(R.id.EntriesLayout);
         CreateEntry("TOTAL", "$0.00", entriesLayout);
+        CreateEntry("GST", "$0.00", entriesLayout);
+        CreateEntry("PST", "$0.00", entriesLayout);
         CreateEntry("Date", "??", entriesLayout);
 
         saveButton = findViewById(R.id.saveButton);
@@ -152,7 +145,7 @@ public final class LivePreviewActivity extends AppCompatActivity
         });
 
         if (allPermissionsGranted()) {
-            createCameraSource(selectedModel);
+            createCameraSource();
         } else {
             getRuntimePermissions();
         }
@@ -166,38 +159,36 @@ public final class LivePreviewActivity extends AppCompatActivity
 
         String csvPath = GetCurrentPath(vendorNameButton.getText().toString()) + OUTPUT_FILE_COMMON_NAME;
         File exported = new File(csvPath);
-        if (!exported.exists()){
-            WriteHeader(GetCurrentPath(vendorNameButton.getText().toString()) + OUTPUT_FILE_COMMON_NAME,  textDict.keySet().toArray(new String[textDict.size()]));
-        }
+        if (exported.exists()){
+            try {
+                FileReader reader = new FileReader(exported);
+                BufferedReader buffReader = new BufferedReader(reader);
+                String headers = buffReader.readLine();
+                buffReader.close();
+                reader.close();
 
-        try {
-            FileReader reader = new FileReader(exported);
-            BufferedReader buffReader = new BufferedReader(reader);
-            String headers = buffReader.readLine();
-            buffReader.close();
-            reader.close();
+                StringTokenizer tokenizer = new StringTokenizer(headers, ",");
+                int numColumns = tokenizer.countTokens();
 
-            StringTokenizer tokenizer = new StringTokenizer(headers, ",");
-            int numColumns = tokenizer.countTokens();
+                if (numColumns != textDict.size()) {
+                    throw new IllegalStateException(
+                            "There is a mismatch in the number of header columns ("
+                                    + numColumns
+                                    +") and number of entries ("
+                                    + textDict.size()
+                                    +") in the TextView dictionary");
+                }
 
-            if (numColumns != textDict.size()) {
-                throw new IllegalStateException(
-                        "There is a mismatch in the number of header columns ("
-                                + numColumns
-                                +") and number of entries ("
-                                + textDict.size()
-                                +") in the TextView dictionary");
+                FileWriter writer = new FileWriter(exported, true);
+                writer.append(ConstructCSVLine(tokenizer));
+
+                writer.close();
+
+                textRecognitionProcessor.needToClearData = true;
+
+            } catch (Exception e) {
+
             }
-
-            FileWriter writer = new FileWriter(exported, true);
-            writer.append(ConstructCSVLine(tokenizer));
-
-            writer.close();
-
-            textRecognitionProcessor.needToClearData = true;
-
-        } catch (Exception e) {
-
         }
     }
 
@@ -272,6 +263,7 @@ public final class LivePreviewActivity extends AppCompatActivity
         });
     }
 
+    @NotNull
     private String GetCurrentPath(String vendorName) {
         return Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
                 + OUTPUT_DIR_NAME
@@ -310,6 +302,7 @@ public final class LivePreviewActivity extends AppCompatActivity
                 vendorNameButton.setText(vendorName);
                 vendorDialog.dismiss();
                 saveButton.setVisibility(View.VISIBLE);
+                textRecognitionProcessor.needToClearData = true;
             }
         });
     }
@@ -338,6 +331,7 @@ public final class LivePreviewActivity extends AppCompatActivity
         vendorNameButton.setText(vendorName);
         vendorDialog.dismiss();
         saveButton.setVisibility(View.VISIBLE);
+        textRecognitionProcessor.needToClearData = true;
     }
 
     private void CreateEntry(String label, String defaultValue, LinearLayout parent)
@@ -377,93 +371,18 @@ public final class LivePreviewActivity extends AppCompatActivity
         textDict.put(label, valueText);
     }
 
-    @Override
-    public synchronized void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-        // An item was selected. You can retrieve the selected item using
-        // parent.getItemAtPosition(pos)
-        selectedModel = parent.getItemAtPosition(pos).toString();
-        Log.d(TAG, "Selected model: " + selectedModel);
-        preview.stop();
-        if (allPermissionsGranted()) {
-            createCameraSource(selectedModel);
-            startCameraSource();
-        } else {
-            getRuntimePermissions();
-        }
-    }
 
-    @Override
-    public void onNothingSelected(AdapterView<?> parent) {
-        // Do nothing.
-    }
-
-    @Override
-    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-        Log.d(TAG, "Set facing");
-        if (cameraSource != null) {
-            if (isChecked) {
-                cameraSource.setFacing(CameraSource.CAMERA_FACING_FRONT);
-            } else {
-                cameraSource.setFacing(CameraSource.CAMERA_FACING_BACK);
-            }
-        }
-        preview.stop();
-        startCameraSource();
-    }
-
-    private void createCameraSource(String model) {
+    private void createCameraSource() {
         // If there's no existing cameraSource, create one.
         if (cameraSource == null) {
             cameraSource = new CameraSource(this, graphicOverlay);
         }
 
         try {
-            switch (model) {
-                case CLASSIFICATION_QUANT:
-                    Log.i(TAG, "Using Custom Image Classifier (quant) Processor");
-                    cameraSource.setMachineLearningFrameProcessor(new CustomImageClassifierProcessor(this, true));
-                    break;
-                case CLASSIFICATION_FLOAT:
-                    Log.i(TAG, "Using Custom Image Classifier (float) Processor");
-                    cameraSource.setMachineLearningFrameProcessor(new CustomImageClassifierProcessor(this, false));
-                    break;
-                case TEXT_DETECTION:
-                    Log.i(TAG, "Using Text Detector Processor");
-                    cameraSource.setMachineLearningFrameProcessor(new TextRecognitionProcessor(textDict));
-                    break;
-                case FACE_DETECTION:
-                    Log.i(TAG, "Using Face Detector Processor");
-                    cameraSource.setMachineLearningFrameProcessor(new FaceDetectionProcessor(getResources()));
-                    break;
-                case AUTOML_IMAGE_LABELING:
-                    cameraSource.setMachineLearningFrameProcessor(new AutoMLImageLabelerProcessor(this));
-                    break;
-                case OBJECT_DETECTION:
-                    Log.i(TAG, "Using Object Detector Processor");
-                    FirebaseVisionObjectDetectorOptions objectDetectorOptions =
-                            new FirebaseVisionObjectDetectorOptions.Builder()
-                                    .setDetectorMode(FirebaseVisionObjectDetectorOptions.STREAM_MODE)
-                                    .enableClassification().build();
-                    cameraSource.setMachineLearningFrameProcessor(
-                            new ObjectDetectorProcessor(objectDetectorOptions));
-                    break;
-                case BARCODE_DETECTION:
-                    Log.i(TAG, "Using Barcode Detector Processor");
-                    cameraSource.setMachineLearningFrameProcessor(new BarcodeScanningProcessor());
-                    break;
-                case IMAGE_LABEL_DETECTION:
-                    Log.i(TAG, "Using Image Label Detector Processor");
-                    cameraSource.setMachineLearningFrameProcessor(new ImageLabelingProcessor());
-                    break;
-                case FACE_CONTOUR:
-                    Log.i(TAG, "Using Face Contour Detector Processor");
-                    cameraSource.setMachineLearningFrameProcessor(new FaceContourDetectorProcessor());
-                    break;
-                default:
-                    Log.e(TAG, "Unknown model: " + model);
-            }
+            textRecognitionProcessor = new TextRecognitionProcessor(textDict);
+            cameraSource.setMachineLearningFrameProcessor(textRecognitionProcessor);
         } catch (Exception e) {
-            Log.e(TAG, "Can not create image processor: " + model, e);
+            Log.e(TAG, "Can not create image processor", e);
             Toast.makeText(
                     getApplicationContext(),
                     "Can not create image processor: " + e.getMessage(),
@@ -563,7 +482,7 @@ public final class LivePreviewActivity extends AppCompatActivity
             int requestCode, String[] permissions, @NonNull int[] grantResults) {
         Log.i(TAG, "Permission granted!");
         if (allPermissionsGranted()) {
-            createCameraSource(selectedModel);
+            createCameraSource();
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }

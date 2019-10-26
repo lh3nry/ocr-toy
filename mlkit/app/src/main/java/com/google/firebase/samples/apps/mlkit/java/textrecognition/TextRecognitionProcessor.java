@@ -16,6 +16,8 @@ package com.google.firebase.samples.apps.mlkit.java.textrecognition;
 import android.graphics.Bitmap;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import android.graphics.Color;
 import android.util.Log;
 import android.widget.TextView;
 
@@ -25,6 +27,7 @@ import com.google.firebase.ml.vision.common.FirebaseVisionImage;
 import com.google.firebase.ml.vision.text.FirebaseVisionText;
 import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
 import com.google.firebase.samples.apps.mlkit.common.CameraImageGraphic;
+import com.google.firebase.samples.apps.mlkit.common.CameraSource;
 import com.google.firebase.samples.apps.mlkit.common.FrameMetadata;
 import com.google.firebase.samples.apps.mlkit.common.GraphicOverlay;
 import com.google.firebase.samples.apps.mlkit.java.VisionProcessorBase;
@@ -40,6 +43,32 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+class TextLineMetadata {
+    public Pattern searchable;
+    public float YValueMidPoint = -1;
+    public float RectHeight = -1;
+    public Map<String, Map<Float, Integer>> counterSet = new HashMap<>();
+    public String textviewKey;
+
+
+    public String adjacent;
+
+    public TextLineMetadata(String regex, int patternFlags, String key) {
+        if (patternFlags > 0) {
+            searchable = Pattern.compile(regex, patternFlags);
+        } else {
+            searchable = Pattern.compile(regex);
+        }
+
+        textviewKey = key;
+    }
+
+    public void Reset() {
+        YValueMidPoint = -1;
+        RectHeight = -1;
+    }
+}
 
 /**
  * Processor for the text recognition demo.
@@ -68,21 +97,28 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         put("Dec", 12);
     }};
 
-    Pattern checkMonths = Pattern.compile("^(Jan)|(Feb)|(Mar)|(Apr)|(May)|(Jun)|(Jul)|(Aug)|(Sep)|(Oct)|(Nov)|(Dec)*$");
+    private String mmddyyyy = "(.*?)(\\d{1,2}/\\d{1,2}/\\d{4})(.*)";
+    private Pattern mmddyyyyPattern = Pattern.compile(mmddyyyy, Pattern.DOTALL);
 
-    String mmddyyyy_str = "^\\d{1,2}/\\d{1,2}/\\d{4}";
-    Pattern mmddyyyy = Pattern.compile(mmddyyyy_str);
+    private String abbrevMonth = "((?:Jan)|(?:Feb)|(?:Mar)|(?:Apr)|(?:May)|(?:Jun)|(?:Jul)|(?:Aug)|(?:Sep)|(?:Oct)|(?:Nov)|(?:Dec))(.*?)(\\d{1,2})(.*)(\\d{4})";
+    private Pattern abbrevMonthPattern = Pattern.compile(abbrevMonth, Pattern.DOTALL);
+    
+    private float NearnessThreshold = 8;
+    private TextLineMetadata total;
+    private TextLineMetadata pst;
+    private TextLineMetadata gst;
 
-    Pattern totalPattern = Pattern.compile("^TOTAL");
-
+    private int rightAlign;
+    private float rightPercent = 0.6f;
     private final Map<String, String> DATE_FORMAT_REGEXPS = new HashMap<String, String>() {{
         put("^\\d{8}$", "yyyyMMdd");
         put("^\\d{1,2}-\\d{1,2}-\\d{4}$", "dd-MM-yyyy");
         put("^\\d{4}-\\d{1,2}-\\d{1,2}$", "yyyy-MM-dd");
-        put(mmddyyyy_str, "MM/dd/yyyy");
+        put(mmddyyyy, "MM/dd/yyyy");
         put("^\\d{4}/\\d{1,2}/\\d{1,2}$", "yyyy/MM/dd");
         put("^\\d{1,2}\\s[a-z]{3}\\s\\d{4}$", "dd MMM yyyy");
         put("^\\d{1,2}\\s[a-z]{4,}\\s\\d{4}$", "dd MMMM yyyy");
+
         put("^\\d{12}$", "yyyyMMddHHmm");
         put("^\\d{8}\\s\\d{4}$", "yyyyMMdd HHmm");
         put("^\\d{1,2}-\\d{1,2}-\\d{4}\\s\\d{1,2}:\\d{2}$", "dd-MM-yyyy HH:mm");
@@ -101,9 +137,17 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         put("^\\d{1,2}\\s[a-z]{4,}\\s\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "dd MMMM yyyy HH:mm:ss");
     }};
 
+    public boolean needToClearData = false;
+
     public TextRecognitionProcessor(Map<String, TextView> textDict) {
         detector = FirebaseVision.getInstance().getOnDeviceTextRecognizer();
         outputMap = textDict;
+
+        total = new TextLineMetadata("^TOTAL", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE, "TOTAL");
+        gst = new TextLineMetadata("(.*)5(\\.\\s?(0*))?%", 0, "GST");
+        pst = new TextLineMetadata("(.*)7(\\.\\s?(0*))?%", 0, "PST");
+
+        rightAlign = (int) (CameraSource.requestedPreviewWidth * rightPercent);
     }
 
     @Override
@@ -120,9 +164,6 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         return detector.processImage(image);
     }
 
-    private float TotalYValueMidPoint = -1;
-    private float TotalRectHeight = -1;
-    private float NearnessThreshold = 3;
 
     @Override
     protected void onSuccess(
@@ -137,68 +178,127 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
             graphicOverlay.add(imageGraphic);
         }
 
+        if (needToClearData) {
+            total.counterSet.clear();
+            gst.counterSet.clear();
+            pst.counterSet.clear();
+
+            outputMap.get(total.textviewKey).setText("$0.00");
+            outputMap.get(gst.textviewKey).setText("$0.00");
+            outputMap.get(pst.textviewKey).setText("$0.00");
+            
+            needToClearData = false;
+        }
+
         for (FirebaseVisionText.TextBlock tmpBlock : results.getTextBlocks()) {
-            if (totalPattern.matcher(tmpBlock.getText()).lookingAt()) {
-                GraphicOverlay.Graphic blockGraphic = new TextGraphicBlock(graphicOverlay, tmpBlock);
-                graphicOverlay.add(blockGraphic);
+            if (total.searchable.matcher(tmpBlock.getText()).lookingAt()) {
+//                GraphicOverlay.Graphic blockGraphic = new TextGraphicBlock(graphicOverlay, tmpBlock);
+//                graphicOverlay.add(blockGraphic);
                 List<FirebaseVisionText.Line> lines = tmpBlock.getLines();
                 for (int j = 0; j < lines.size(); j++) {
-                    if (lines.get(j).getText().contains("TOTAL")) {
+                    if (total.searchable.matcher(lines.get(j).getText()).lookingAt()) {
                         FirebaseVisionText.Line line = lines.get(j);
-                        TotalRectHeight = line.getBoundingBox().top - line.getBoundingBox().bottom;
-                        TotalYValueMidPoint = (line.getBoundingBox().top + line.getBoundingBox().bottom) / 2f;
-                        GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, lines.get(j));
+                        ExtractAdjacent(line, total);
+                        GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
                         graphicOverlay.add(lineGraphic);
-//                        lineGraphic = new TextGraphicLine(graphicOverlay, lines.get(j));
-//                        graphicOverlay.add(lineGraphic);
+
                         j = lines.size();
                     }
                 }
             }
-            else if (checkMonths.matcher(tmpBlock.getText()).lookingAt()) {
+            else if (abbrevMonthPattern.matcher(tmpBlock.getText()).lookingAt()) {
                 GraphicOverlay.Graphic blockGraphic = new TextGraphicBlock(graphicOverlay, tmpBlock);
                 graphicOverlay.add(blockGraphic);
 
-                for ( FirebaseVisionText.Line line : tmpBlock.getLines() ) {
-                    if (checkMonths.matcher(line.getText()).lookingAt()) {
-                        if (line.getElements().size() > 3) {
-                            processDateAbbrevMonth(line);
-                        }
-                        for (FirebaseVisionText.Element e : line.getElements()) {
-                            GraphicOverlay.Graphic elementGraphic = new TextGraphicElement(graphicOverlay, e);
-                            graphicOverlay.add(elementGraphic);
-                        }
-                    }
-                }
+                processDateAbbrevMonth(tmpBlock);
             }
             else if (tmpBlock.getText().contains("/")) {
-                for (FirebaseVisionText.Line line : tmpBlock.getLines()) {
-                    if (mmddyyyy.matcher(line.getText()).lookingAt()) {
-                        GraphicOverlay.Graphic blockGraphic = new TextGraphicLine(graphicOverlay, line);
-                        graphicOverlay.add(blockGraphic);
+                GraphicOverlay.Graphic blockGraphic = new TextGraphicBlock(graphicOverlay, tmpBlock);
+                graphicOverlay.add(blockGraphic);
 
-                        Matcher match = mmddyyyy.matcher(line.getText());
-                        if (match.matches()) {
-                            String str = match.group();
-                            try {
-                                Date date = new SimpleDateFormat("MM/dd/yyyy").parse(str);
-                                outputMap.get("Date").setText(date.toString());
-                            } catch (ParseException parseX) {}
-                        }
+                Matcher match = mmddyyyyPattern.matcher(tmpBlock.getText());
+
+                if (match.matches()) {
+                    String str = match.group(2);
+                    SimpleDateFormat outputFormat = new SimpleDateFormat("MM/dd/yyyy");
+                    try {
+                        Date date = outputFormat.parse(str);
+                        outputMap.get("Date").setText(outputFormat.format(date));
+                    } catch (ParseException parseX) {}
+                }
+            }
+            else if (tmpBlock.getText().contains("%")) {
+                for (FirebaseVisionText.Line line : tmpBlock.getLines()) {
+
+                    if (pst.searchable.matcher(line.getText()).lookingAt()) {
+                        GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
+                        graphicOverlay.add(lineGraphic);
+                        ExtractAdjacent(line, pst);
+                    }
+                    if (gst.searchable.matcher(line.getText()).lookingAt()) {
+                        GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
+                        graphicOverlay.add(lineGraphic);
+                        ExtractAdjacent(line, gst);
                     }
                 }
             }
             else {
                 for (FirebaseVisionText.Line line : tmpBlock.getLines()) {
-                    float lineMidPoint = (line.getBoundingBox().top + line.getBoundingBox().bottom) / 2f;
-                    if (Math.abs(lineMidPoint - TotalYValueMidPoint) < NearnessThreshold) {
-                        GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
-                        graphicOverlay.add(lineGraphic);
-                        if (line.getText().contains("$")){
-                            processText(line.getText());
+//                    if (Pattern.compile("($?)(\\d{1,2}(.*)\\d{1,2})").matcher(line.getText()).lookingAt())
+                    {
+                        float lineMidPoint = (line.getBoundingBox().top + line.getBoundingBox().bottom) / 2f;
+                        if (Math.abs(lineMidPoint - total.YValueMidPoint) < NearnessThreshold) {
+                            GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
+                            graphicOverlay.add(lineGraphic);
+                            processText(line.getText(), total);
                         }
-                        else{
-                            processText(line.getText());
+                        else if (line.getText().length() <= 6) {
+//                        else if (!line.getText().contains("%") && !line.getText().contains("@") ) {
+                            if (Math.abs(lineMidPoint - pst.YValueMidPoint) < NearnessThreshold) {
+                                GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line, Color.BLUE);
+                                graphicOverlay.add(lineGraphic);
+                                processText(line.getText(), pst);
+                            }
+                            else if (Math.abs(lineMidPoint - gst.YValueMidPoint) < NearnessThreshold) {
+    //                            if (Pattern.compile("\\d{1,2}\\.(.*)\\d{1,2}", Pattern.MULTILINE).matcher(line.getText()).lookingAt()) {
+                                GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line, Color.BLUE);
+                                graphicOverlay.add(lineGraphic);
+                                processText(line.getText(), gst);
+                            }
+                        }
+                        else if (Pattern.compile("\\d{1,2}\\.(.*)\\d{1,2}", Pattern.MULTILINE).matcher(line.getText()).lookingAt()) {
+                            GraphicOverlay.Graphic lineGraphic;// = new TextGraphicLine(graphicOverlay, line);
+//                            graphicOverlay.add(lineGraphic);
+
+                            float boxRight = line.getBoundingBox().right;
+                            float boxCenterX = centroid(line.getBoundingBox().left, line.getBoundingBox().right);
+//                            rolling.put(boxCenterX);
+
+//                            if (maxRight <= boxRight) {
+//                            if (Math.abs(boxCenterX - rightAlign) < 100) {
+                            if (boxCenterX >= rightAlign) {
+                                lineGraphic = new TextGraphicLine(graphicOverlay, line, Color.RED);
+                                graphicOverlay.add(lineGraphic);
+                                if (Math.abs(lineMidPoint - pst.YValueMidPoint) < NearnessThreshold) {
+                                    lineGraphic = new TextGraphicLine(graphicOverlay, line, Color.BLUE);
+                                    graphicOverlay.add(lineGraphic);
+                                    processText(line.getText(), pst);
+                                }
+                                else if (Math.abs(lineMidPoint - gst.YValueMidPoint) < NearnessThreshold) {
+                                    lineGraphic = new TextGraphicLine(graphicOverlay, line, Color.BLUE);
+                                    graphicOverlay.add(lineGraphic);
+                                    processText(line.getText(), gst);
+                                }
+
+
+//                                maxRight = boxRight;
+//                                rolling.put((int) boxCenterX);
+                            }
+//                            if (Math.abs(boxRight - maxRight) < NearnessThreshold
+//                                && Math.abs(boxCenterX - rolling.get()) < NearnessThreshold) {
+//                                lineGraphic = new TextGraphicLine(graphicOverlay, line, Color.BLUE);
+//                                graphicOverlay.add(lineGraphic);
+//                            }
                         }
                     }
                 }
@@ -206,31 +306,45 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         }
 
         graphicOverlay.postInvalidate();
-        TotalYValueMidPoint = -1;
-        TotalRectHeight = -1;
+        total.Reset();
+        gst.Reset();
+        pst.Reset();
     }
-    
-    private void processDateAbbrevMonth(FirebaseVisionText.Line line) {
-        String monthText = line.getElements().get(0).getText();
 
-        int month = abbrevMonths.get(monthText);
-        int day = Integer.parseInt(line.getElements().get(1).getText()
-                .replace(",", "")
-                .replace(".", ""));
-        int year = Integer.parseInt(line.getElements().get(2).getText());
+    private float centroid(int a, int b) {
+        return (a + b) / 2f;
+    }
 
-        Date date;
-        try {
-            date = new SimpleDateFormat("dd-M-yyyy").parse(String.format("%d-%d-%d", day, month, year));
-        } catch (ParseException parseEx) {
-            Calendar cal = Calendar.getInstance();
-            cal.set(Calendar.YEAR, year);
-            cal.set(Calendar.MONTH, month - 1);
-            cal.set(Calendar.DAY_OF_MONTH, day);
-            date = cal.getTime();
+    private void ExtractAdjacent(FirebaseVisionText.Line line, TextLineMetadata metadata) {
+        metadata.RectHeight = line.getBoundingBox().top - line.getBoundingBox().bottom;
+        metadata.YValueMidPoint = (line.getBoundingBox().top + line.getBoundingBox().bottom) / 2f;
+    }
+
+    private void processDateAbbrevMonth(FirebaseVisionText.TextBlock tmpBlock) {
+        Matcher dateMatcher = abbrevMonthPattern.matcher(tmpBlock.getText());
+        if (dateMatcher.lookingAt()) {
+            String monthStr = dateMatcher.group(1);
+            String dayStr = dateMatcher.group(3);
+            String yearStr = dateMatcher.group(5);
+
+            int month = abbrevMonths.get(monthStr);
+            int day = Integer.parseInt(dayStr);
+            int year = Integer.parseInt(yearStr);
+
+            SimpleDateFormat outputFormat = new SimpleDateFormat("MM/dd/yyyy");
+            Date date;
+            try {
+                date = outputFormat.parse(String.format("%d/%d/%d", month, day, year));
+            } catch (ParseException parseX) {
+                Calendar cal = Calendar.getInstance();
+                cal.set(Calendar.YEAR, year);
+                cal.set(Calendar.MONTH, month - 1);
+                cal.set(Calendar.DAY_OF_MONTH, day);
+                date = cal.getTime();
+            }
+
+            outputMap.get("Date").setText(outputFormat.format(date));
         }
-
-        outputMap.get("Date").setText(date.toString());
     }
 
     private float FindMaxOccuring (Map<Float, Integer> countingMap){
@@ -246,14 +360,14 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         return maxKey;
     }
 
-    private void processText(String raw) {
+    private void processText(String raw, TextLineMetadata metadata) {
         raw = raw.replace("$","");
         raw = raw.replace(" ","");
         raw = raw.replace(",",".");
         try {
             float parsed = Float.parseFloat(raw);
-            if (counterSet.containsKey("TOTAL")){
-                Map<Float, Integer> x = counterSet.get("TOTAL");
+            if (metadata.counterSet.containsKey(metadata)){
+                Map<Float, Integer> x = metadata.counterSet.get(metadata);
                 if (x.containsKey(parsed)) {
                     x.put (parsed, x.get(parsed) + 1);
                 }
@@ -264,10 +378,12 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
             else {
                 Map<Float, Integer> x = new HashMap<>();
                 x.put(parsed, 1);
-                counterSet.put("TOTAL", x);
+                metadata.counterSet.put(metadata.textviewKey, x);
             }
 
-            outputMap.get("TOTAL").setText(new DecimalFormat("#.00").format(FindMaxOccuring(counterSet.get("TOTAL"))));
+            outputMap.get(metadata.textviewKey)
+                    .setText(new DecimalFormat("#.00")
+                    .format(FindMaxOccuring(metadata.counterSet.get(metadata.textviewKey))));
         } catch (NumberFormatException formatEx) {
 //            outputMap.get("TOTAL").setText("$" + raw);
         }
