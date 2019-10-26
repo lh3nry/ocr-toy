@@ -174,7 +174,14 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         }
 
         if (needToClearData) {
-            counterSet.clear();
+            total.counterSet.clear();
+            gst.counterSet.clear();
+            pst.counterSet.clear();
+
+            outputMap.get(total.textviewKey).setText("$0.00");
+            outputMap.get(gst.textviewKey).setText("$0.00");
+            outputMap.get(pst.textviewKey).setText("$0.00");
+            
             needToClearData = false;
         }
 
