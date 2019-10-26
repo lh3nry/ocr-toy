@@ -48,15 +48,20 @@ class TextLineMetadata {
     public Pattern searchable;
     public float YValueMidPoint = -1;
     public float RectHeight = -1;
+    public Map<String, Map<Float, Integer>> counterSet = new HashMap<>();
+    public String textviewKey;
+
 
     public String adjacent;
 
-    public TextLineMetadata(String regex, int patternFlags) {
+    public TextLineMetadata(String regex, int patternFlags, String key) {
         if (patternFlags > 0) {
             searchable = Pattern.compile(regex, patternFlags);
         } else {
             searchable = Pattern.compile(regex);
         }
+
+        textviewKey = key;
     }
 
     public void Reset() {
