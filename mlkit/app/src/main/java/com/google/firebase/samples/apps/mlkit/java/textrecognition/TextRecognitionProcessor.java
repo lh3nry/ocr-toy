@@ -103,13 +103,13 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
     private String abbrevMonth = "((?:Jan)|(?:Feb)|(?:Mar)|(?:Apr)|(?:May)|(?:Jun)|(?:Jul)|(?:Aug)|(?:Sep)|(?:Oct)|(?:Nov)|(?:Dec))(.*?)(\\d{1,2})(.*)(\\d{4})";
     private Pattern abbrevMonthPattern = Pattern.compile(abbrevMonth, Pattern.DOTALL);
     
-    private float NearnessThreshold = 8;
+    private final float NearnessThreshold = 8;
     private TextLineMetadata total;
     private TextLineMetadata pst;
     private TextLineMetadata gst;
 
     private int rightAlign;
-    private float rightPercent = 0.6f;
+    private final float rightPercent = 0.6f;
     private final Map<String, String> DATE_FORMAT_REGEXPS = new HashMap<String, String>() {{
         put("^\\d{8}$", "yyyyMMdd");
         put("^\\d{1,2}-\\d{1,2}-\\d{4}$", "dd-MM-yyyy");
