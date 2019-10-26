@@ -28,7 +28,7 @@ public class BitmapUtils {
                             imageInBuffer, ImageFormat.NV21, metadata.getWidth(), metadata.getHeight(), null);
             if (image != null) {
                 ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                image.compressToJpeg(new Rect(0, 0, metadata.getWidth(), metadata.getHeight()), 50, stream);
+                image.compressToJpeg(new Rect(0, 0, metadata.getWidth(), metadata.getHeight()), 70, stream);
 
                 Bitmap bmp = BitmapFactory.decodeByteArray(stream.toByteArray(), 0, stream.size());
 
