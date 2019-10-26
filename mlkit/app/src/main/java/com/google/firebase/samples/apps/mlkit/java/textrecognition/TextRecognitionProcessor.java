@@ -104,7 +104,7 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
     private TextLineMetadata gst;
 
     private int rightAlign;
-    private float rightPercent = 0.8f;
+    private float rightPercent = 0.6f;
     private final Map<String, String> DATE_FORMAT_REGEXPS = new HashMap<String, String>() {{
         put("^\\d{8}$", "yyyyMMdd");
         put("^\\d{1,2}-\\d{1,2}-\\d{4}$", "dd-MM-yyyy");
@@ -138,9 +138,9 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         detector = FirebaseVision.getInstance().getOnDeviceTextRecognizer();
         outputMap = textDict;
 
-        total = new TextLineMetadata("^TOTAL", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
-        gst = new TextLineMetadata("(.*)5(\\.\\s?(0*))?%", 0);
-        pst = new TextLineMetadata("(.*)7(\\.\\s?(0*))?%", 0);
+        total = new TextLineMetadata("^TOTAL", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE, "TOTAL");
+        gst = new TextLineMetadata("(.*)5(\\.\\s?(0*))?%", 0, "GST");
+        pst = new TextLineMetadata("(.*)7(\\.\\s?(0*))?%", 0, "PST");
 
         rightAlign = (int) (CameraSource.requestedPreviewWidth * rightPercent);
     }
@@ -238,18 +238,20 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
                         if (Math.abs(lineMidPoint - total.YValueMidPoint) < NearnessThreshold) {
                             GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
                             graphicOverlay.add(lineGraphic);
-                            processText(line.getText());
+                            processText(line.getText(), total);
                         }
-                        else if (Math.abs(lineMidPoint - pst.YValueMidPoint) < NearnessThreshold) {
-                            if (Pattern.compile("\\d{1,2}\\.(.*)\\d{1,2}", Pattern.MULTILINE).matcher(line.getText()).lookingAt()) {
+                        else if (line.getText().length() <= 6) {
+//                        else if (!line.getText().contains("%") && !line.getText().contains("@") ) {
+                            if (Math.abs(lineMidPoint - pst.YValueMidPoint) < NearnessThreshold) {
                                 GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line, Color.BLUE);
                                 graphicOverlay.add(lineGraphic);
+                                processText(line.getText(), pst);
                             }
-                        }
-                        else if (Math.abs(lineMidPoint - gst.YValueMidPoint) < NearnessThreshold) {
-                            if (Pattern.compile("\\d{1,2}\\.(.*)\\d{1,2}", Pattern.MULTILINE).matcher(line.getText()).lookingAt()) {
+                            else if (Math.abs(lineMidPoint - gst.YValueMidPoint) < NearnessThreshold) {
+    //                            if (Pattern.compile("\\d{1,2}\\.(.*)\\d{1,2}", Pattern.MULTILINE).matcher(line.getText()).lookingAt()) {
                                 GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line, Color.BLUE);
                                 graphicOverlay.add(lineGraphic);
+                                processText(line.getText(), gst);
                             }
                         }
                         else if (Pattern.compile("\\d{1,2}\\.(.*)\\d{1,2}", Pattern.MULTILINE).matcher(line.getText()).lookingAt()) {
@@ -261,16 +263,19 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
 //                            rolling.put(boxCenterX);
 
 //                            if (maxRight <= boxRight) {
-                            if (Math.abs(boxCenterX - rightAlign) < 100) {
+//                            if (Math.abs(boxCenterX - rightAlign) < 100) {
+                            if (boxCenterX >= rightAlign) {
                                 lineGraphic = new TextGraphicLine(graphicOverlay, line, Color.RED);
                                 graphicOverlay.add(lineGraphic);
                                 if (Math.abs(lineMidPoint - pst.YValueMidPoint) < NearnessThreshold) {
                                     lineGraphic = new TextGraphicLine(graphicOverlay, line, Color.BLUE);
                                     graphicOverlay.add(lineGraphic);
+                                    processText(line.getText(), pst);
                                 }
                                 else if (Math.abs(lineMidPoint - gst.YValueMidPoint) < NearnessThreshold) {
                                     lineGraphic = new TextGraphicLine(graphicOverlay, line, Color.BLUE);
                                     graphicOverlay.add(lineGraphic);
+                                    processText(line.getText(), gst);
                                 }
 
 
@@ -292,6 +297,10 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         total.Reset();
         gst.Reset();
         pst.Reset();
+    }
+
+    private float centroid(int a, int b) {
+        return (a + b) / 2f;
     }
 
     private void ExtractAdjacent(FirebaseVisionText.Line line, TextLineMetadata metadata) {
@@ -339,14 +348,14 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         return maxKey;
     }
 
-    private void processText(String raw) {
+    private void processText(String raw, TextLineMetadata metadata) {
         raw = raw.replace("$","");
         raw = raw.replace(" ","");
         raw = raw.replace(",",".");
         try {
             float parsed = Float.parseFloat(raw);
-            if (counterSet.containsKey("TOTAL")){
-                Map<Float, Integer> x = counterSet.get("TOTAL");
+            if (metadata.counterSet.containsKey(metadata)){
+                Map<Float, Integer> x = metadata.counterSet.get(metadata);
                 if (x.containsKey(parsed)) {
                     x.put (parsed, x.get(parsed) + 1);
                 }
@@ -357,10 +366,12 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
             else {
                 Map<Float, Integer> x = new HashMap<>();
                 x.put(parsed, 1);
-                counterSet.put("TOTAL", x);
+                metadata.counterSet.put(metadata.textviewKey, x);
             }
 
-            outputMap.get("TOTAL").setText(new DecimalFormat("#.00").format(FindMaxOccuring(counterSet.get("TOTAL"))));
+            outputMap.get(metadata.textviewKey)
+                    .setText(new DecimalFormat("#.00")
+                    .format(FindMaxOccuring(metadata.counterSet.get(metadata.textviewKey))));
         } catch (NumberFormatException formatEx) {
 //            outputMap.get("TOTAL").setText("$" + raw);
         }

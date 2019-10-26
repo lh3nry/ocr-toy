@@ -120,6 +120,8 @@ public final class LivePreviewActivity extends AppCompatActivity
 
         LinearLayout entriesLayout = findViewById(R.id.EntriesLayout);
         CreateEntry("TOTAL", "$0.00", entriesLayout);
+        CreateEntry("GST", "$0.00", entriesLayout);
+        CreateEntry("PST", "$0.00", entriesLayout);
         CreateEntry("Date", "??", entriesLayout);
 
         saveButton = findViewById(R.id.saveButton);
