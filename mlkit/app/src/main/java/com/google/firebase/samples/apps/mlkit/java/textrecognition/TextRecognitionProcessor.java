@@ -16,6 +16,8 @@ package com.google.firebase.samples.apps.mlkit.java.textrecognition;
 import android.graphics.Bitmap;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import android.graphics.Color;
 import android.util.Log;
 import android.widget.TextView;
 
@@ -25,6 +27,7 @@ import com.google.firebase.ml.vision.common.FirebaseVisionImage;
 import com.google.firebase.ml.vision.text.FirebaseVisionText;
 import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
 import com.google.firebase.samples.apps.mlkit.common.CameraImageGraphic;
+import com.google.firebase.samples.apps.mlkit.common.CameraSource;
 import com.google.firebase.samples.apps.mlkit.common.FrameMetadata;
 import com.google.firebase.samples.apps.mlkit.common.GraphicOverlay;
 import com.google.firebase.samples.apps.mlkit.java.VisionProcessorBase;
@@ -49,7 +52,11 @@ class TextLineMetadata {
     public String adjacent;
 
     public TextLineMetadata(String regex, int patternFlags) {
-        searchable = Pattern.compile(regex, patternFlags);
+        if (patternFlags > 0) {
+            searchable = Pattern.compile(regex, patternFlags);
+        } else {
+            searchable = Pattern.compile(regex);
+        }
     }
 
     public void Reset() {
@@ -91,11 +98,13 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
     private String abbrevMonth = "((?:Jan)|(?:Feb)|(?:Mar)|(?:Apr)|(?:May)|(?:Jun)|(?:Jul)|(?:Aug)|(?:Sep)|(?:Oct)|(?:Nov)|(?:Dec))(.*?)(\\d{1,2})(.*)(\\d{4})";
     private Pattern abbrevMonthPattern = Pattern.compile(abbrevMonth, Pattern.DOTALL);
     
-    private float NearnessThreshold = 3;
+    private float NearnessThreshold = 8;
     private TextLineMetadata total;
     private TextLineMetadata pst;
     private TextLineMetadata gst;
 
+    private int rightAlign;
+    private float rightPercent = 0.8f;
     private final Map<String, String> DATE_FORMAT_REGEXPS = new HashMap<String, String>() {{
         put("^\\d{8}$", "yyyyMMdd");
         put("^\\d{1,2}-\\d{1,2}-\\d{4}$", "dd-MM-yyyy");
@@ -130,8 +139,10 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
         outputMap = textDict;
 
         total = new TextLineMetadata("^TOTAL", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
-        gst = new TextLineMetadata("5(\\.(0*))?%", 0);
-        pst = new TextLineMetadata("7(\\.(0*))?%", 0);
+        gst = new TextLineMetadata("(.*)5(\\.\\s?(0*))?%", 0);
+        pst = new TextLineMetadata("(.*)7(\\.\\s?(0*))?%", 0);
+
+        rightAlign = (int) (CameraSource.requestedPreviewWidth * rightPercent);
     }
 
     @Override
@@ -169,8 +180,8 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
 
         for (FirebaseVisionText.TextBlock tmpBlock : results.getTextBlocks()) {
             if (total.searchable.matcher(tmpBlock.getText()).lookingAt()) {
-                GraphicOverlay.Graphic blockGraphic = new TextGraphicBlock(graphicOverlay, tmpBlock);
-                graphicOverlay.add(blockGraphic);
+//                GraphicOverlay.Graphic blockGraphic = new TextGraphicBlock(graphicOverlay, tmpBlock);
+//                graphicOverlay.add(blockGraphic);
                 List<FirebaseVisionText.Line> lines = tmpBlock.getLines();
                 for (int j = 0; j < lines.size(); j++) {
                     if (total.searchable.matcher(lines.get(j).getText()).lookingAt()) {
@@ -205,25 +216,24 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
                 }
             }
             else if (tmpBlock.getText().contains("%")) {
-                GraphicOverlay.Graphic blockGraphic = new TextGraphicBlock(graphicOverlay, tmpBlock);
-                graphicOverlay.add(blockGraphic);
                 for (FirebaseVisionText.Line line : tmpBlock.getLines()) {
-                    GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
-                    graphicOverlay.add(lineGraphic);
-                    if (pst.searchable.matcher(line.getText()).lookingAt()) {
 
+                    if (pst.searchable.matcher(line.getText()).lookingAt()) {
+                        GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
+                        graphicOverlay.add(lineGraphic);
                         ExtractAdjacent(line, pst);
                     }
                     if (gst.searchable.matcher(line.getText()).lookingAt()) {
-//                        GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
-//                        graphicOverlay.add(lineGraphic);
+                        GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
+                        graphicOverlay.add(lineGraphic);
                         ExtractAdjacent(line, gst);
                     }
                 }
             }
             else {
                 for (FirebaseVisionText.Line line : tmpBlock.getLines()) {
-                    if (Pattern.compile("\\d{1,2}(.*)\\d{1,2}").matcher(line.getText()).lookingAt()) {
+//                    if (Pattern.compile("($?)(\\d{1,2}(.*)\\d{1,2})").matcher(line.getText()).lookingAt())
+                    {
                         float lineMidPoint = (line.getBoundingBox().top + line.getBoundingBox().bottom) / 2f;
                         if (Math.abs(lineMidPoint - total.YValueMidPoint) < NearnessThreshold) {
                             GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
@@ -231,17 +241,48 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
                             processText(line.getText());
                         }
                         else if (Math.abs(lineMidPoint - pst.YValueMidPoint) < NearnessThreshold) {
-                            GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
-                            graphicOverlay.add(lineGraphic);
+                            if (Pattern.compile("\\d{1,2}\\.(.*)\\d{1,2}", Pattern.MULTILINE).matcher(line.getText()).lookingAt()) {
+                                GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line, Color.BLUE);
+                                graphicOverlay.add(lineGraphic);
+                            }
                         }
                         else if (Math.abs(lineMidPoint - gst.YValueMidPoint) < NearnessThreshold) {
-                            GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
-                            graphicOverlay.add(lineGraphic);
+                            if (Pattern.compile("\\d{1,2}\\.(.*)\\d{1,2}", Pattern.MULTILINE).matcher(line.getText()).lookingAt()) {
+                                GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line, Color.BLUE);
+                                graphicOverlay.add(lineGraphic);
+                            }
                         }
-//                    else if (Pattern.compile("\\d{1,2}(.*)\\d{1,2}").matcher(line.getText()).lookingAt()) {
-//                        GraphicOverlay.Graphic lineGraphic = new TextGraphicLine(graphicOverlay, line);
-//                        graphicOverlay.add(lineGraphic);
-//                    }
+                        else if (Pattern.compile("\\d{1,2}\\.(.*)\\d{1,2}", Pattern.MULTILINE).matcher(line.getText()).lookingAt()) {
+                            GraphicOverlay.Graphic lineGraphic;// = new TextGraphicLine(graphicOverlay, line);
+//                            graphicOverlay.add(lineGraphic);
+
+                            float boxRight = line.getBoundingBox().right;
+                            float boxCenterX = centroid(line.getBoundingBox().left, line.getBoundingBox().right);
+//                            rolling.put(boxCenterX);
+
+//                            if (maxRight <= boxRight) {
+                            if (Math.abs(boxCenterX - rightAlign) < 100) {
+                                lineGraphic = new TextGraphicLine(graphicOverlay, line, Color.RED);
+                                graphicOverlay.add(lineGraphic);
+                                if (Math.abs(lineMidPoint - pst.YValueMidPoint) < NearnessThreshold) {
+                                    lineGraphic = new TextGraphicLine(graphicOverlay, line, Color.BLUE);
+                                    graphicOverlay.add(lineGraphic);
+                                }
+                                else if (Math.abs(lineMidPoint - gst.YValueMidPoint) < NearnessThreshold) {
+                                    lineGraphic = new TextGraphicLine(graphicOverlay, line, Color.BLUE);
+                                    graphicOverlay.add(lineGraphic);
+                                }
+
+
+//                                maxRight = boxRight;
+//                                rolling.put((int) boxCenterX);
+                            }
+//                            if (Math.abs(boxRight - maxRight) < NearnessThreshold
+//                                && Math.abs(boxCenterX - rolling.get()) < NearnessThreshold) {
+//                                lineGraphic = new TextGraphicLine(graphicOverlay, line, Color.BLUE);
+//                                graphicOverlay.add(lineGraphic);
+//                            }
+                        }
                     }
                 }
             }
